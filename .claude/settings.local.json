@@ -24,7 +24,11 @@
       "Bash(cp /Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build/sqlite3.wasm /Users/stephenwasielewski/Apps/simple_kennel/web/sqlite3.wasm && echo \"copied\")",
       "Bash(python3 -c \"import json,sys; pkgs=json.load\\(sys.stdin\\)['packages']; print\\(next\\(p['rootUri'] for p in pkgs if p['name']=='pocketbase'\\)\\)\")",
       "Bash(open /Users/stephenwasielewski/Apps/simple_kennel/ios/Runner.xcworkspace)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel config user.name)",
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel config user.email)",
+      "Bash(git config *)",
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel status --short)"
     ],
     "additionalDirectories": [
       "/Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build"
