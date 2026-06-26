@@ -23,25 +23,35 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   late DateTime _month;
   final _hScroll = ScrollController();
-  final _vScroll = ScrollController();
   final _leftScroll = ScrollController();
+  final _transform = TransformationController();
 
   @override
   void initState() {
     super.initState();
     _month = DateTime(DateTime.now().year, DateTime.now().month);
-    _vScroll.addListener(() {
-      if (_leftScroll.hasClients && _leftScroll.offset != _vScroll.offset) {
-        _leftScroll.jumpTo(_vScroll.offset);
-      }
-    });
+    _transform.addListener(_onTransform);
+  }
+
+  void _onTransform() {
+    final t = _transform.value.getTranslation();
+    final hOff = (-t.x).clamp(0.0, double.infinity);
+    final vOff = (-t.y).clamp(0.0, double.infinity);
+    if (_hScroll.hasClients) {
+      final max = _hScroll.position.maxScrollExtent;
+      _hScroll.jumpTo(hOff.clamp(0.0, max));
+    }
+    if (_leftScroll.hasClients) {
+      final max = _leftScroll.position.maxScrollExtent;
+      _leftScroll.jumpTo(vOff.clamp(0.0, max));
+    }
   }
 
   @override
   void dispose() {
     _hScroll.dispose();
-    _vScroll.dispose();
     _leftScroll.dispose();
+    _transform.dispose();
     super.dispose();
   }
 
@@ -203,15 +213,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
                   Container(width: 1, color: theme.borderColor),
-                  // Scrollable body: vertical outer, horizontal inner
+                  // Scrollable body: InteractiveViewer handles both axes
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: _vScroll,
-                      scrollDirection: Axis.vertical,
-                      child: SingleChildScrollView(
-                        controller: _hScroll,
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
+                    child: InteractiveViewer(
+                      transformationController: _transform,
+                      constrained: false,
+                      scaleEnabled: false,
+                      boundaryMargin: EdgeInsets.zero,
+                      child: SizedBox(
                           width: kCellW * days,
                           height: kTotalRuns * kCellH,
                           child: Column(
@@ -286,7 +295,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
