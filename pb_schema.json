@@ -1,0 +1,132 @@
+[
+  {
+    "id": "customers001",
+    "name": "customers",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "cust_name", "name": "name", "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "cust_email", "name": "email", "type": "email", "system": false, "required": false, "options": {} },
+      { "id": "cust_phone", "name": "phone_number", "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "cust_addr", "name": "address", "type": "text", "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
+    "options": {}
+  },
+  {
+    "id": "pets000001",
+    "name": "pets",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "pet_custid", "name": "customer_id", "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "pet_name",   "name": "name",        "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "pet_spec",   "name": "species",     "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "pet_breed",  "name": "breed",       "type": "text", "system": false, "required": false, "options": {} },
+      { "id": "pet_age",    "name": "age",         "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "pet_notes",  "name": "notes",       "type": "text", "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
+    "options": {}
+  },
+  {
+    "id": "bookings01",
+    "name": "bookings",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "bk_custname",  "name": "customer_name", "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "bk_day",       "name": "day",           "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "bk_month",     "name": "month",         "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "bk_year",      "name": "year",          "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "bk_endday",    "name": "end_day",       "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "bk_kidx",      "name": "kennel_index",  "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "bk_kname",     "name": "kennel_name",   "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "bk_notes",     "name": "notes",         "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "bk_status",    "name": "status",        "type": "text",   "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
+    "options": {}
+  },
+  {
+    "id": "invoices01",
+    "name": "invoices",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "inv_custid",   "name": "customer_id",    "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_custnm",   "name": "customer_name",  "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_num",      "name": "invoice_number", "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_bkid",     "name": "booking_id",     "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_idate",    "name": "issue_date",     "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_ddate",    "name": "due_date",       "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_status",   "name": "status",         "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_notes",    "name": "notes",          "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "inv_subtot",   "name": "sub_total",      "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "inv_taxrate",  "name": "tax_rate",       "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "inv_taxamt",   "name": "tax_amount",     "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "inv_total",    "name": "total_amount",   "type": "number", "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
+    "options": {}
+  },
+  {
+    "id": "lineitems1",
+    "name": "invoice_line_items",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "li_invid",  "name": "invoice_id",  "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "li_desc",   "name": "description", "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "li_qty",    "name": "quantity",    "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "li_price",  "name": "unit_price",  "type": "number", "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
+    "options": {}
+  },
+  {
+    "id": "services01",
+    "name": "services",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "id": "svc_name",   "name": "name",          "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "svc_desc",   "name": "description",   "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "svc_price",  "name": "default_price", "type": "number", "system": false, "required": false, "options": {} },
+      { "id": "svc_unit",   "name": "unit",          "type": "text",   "system": false, "required": false, "options": {} },
+      { "id": "svc_active", "name": "is_active",     "type": "bool",   "system": false, "required": false, "options": {} }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "deleteRule": "",
+    "updateRule": "",
+    "options": {}
+  }
+]

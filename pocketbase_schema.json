@@ -1,0 +1,126 @@
+[
+  {
+    "id": "pbc_customers001",
+    "name": "customers",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_cust_name",  "name": "name",         "type": "text",   "required": true  },
+      { "id": "f_cust_email", "name": "email",        "type": "email",  "required": false },
+      { "id": "f_cust_phone", "name": "phone_number", "type": "text",   "required": false },
+      { "id": "f_cust_addr",  "name": "address",      "type": "text",   "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  },
+  {
+    "id": "pbc_pets0000001",
+    "name": "pets",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_pet_custid",  "name": "customer_id", "type": "text",   "required": true  },
+      { "id": "f_pet_name",    "name": "name",        "type": "text",   "required": true  },
+      { "id": "f_pet_species", "name": "species",     "type": "text",   "required": false },
+      { "id": "f_pet_breed",   "name": "breed",       "type": "text",   "required": false },
+      { "id": "f_pet_age",     "name": "age",         "type": "number", "required": false },
+      { "id": "f_pet_notes",   "name": "notes",       "type": "text",   "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  },
+  {
+    "id": "pbc_bookings001",
+    "name": "bookings",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_bk_custname",    "name": "customer_name", "type": "text",   "required": true  },
+      { "id": "f_bk_day",         "name": "day",           "type": "number", "required": true  },
+      { "id": "f_bk_month",       "name": "month",         "type": "number", "required": true  },
+      { "id": "f_bk_year",        "name": "year",          "type": "number", "required": true  },
+      { "id": "f_bk_endday",      "name": "end_day",       "type": "number", "required": true  },
+      { "id": "f_bk_kennelidx",   "name": "kennel_index",  "type": "number", "required": false },
+      { "id": "f_bk_kennelname",  "name": "kennel_name",   "type": "text",   "required": false },
+      { "id": "f_bk_notes",       "name": "notes",         "type": "text",   "required": false },
+      { "id": "f_bk_status",      "name": "status",        "type": "text",   "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  },
+  {
+    "id": "pbc_invoices001",
+    "name": "invoices",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_inv_custid",    "name": "customer_id",    "type": "text",   "required": false },
+      { "id": "f_inv_custname",  "name": "customer_name",  "type": "text",   "required": false },
+      { "id": "f_inv_number",    "name": "invoice_number", "type": "text",   "required": false },
+      { "id": "f_inv_bookingid", "name": "booking_id",     "type": "text",   "required": false },
+      { "id": "f_inv_issued",    "name": "issue_date",     "type": "text",   "required": false },
+      { "id": "f_inv_due",       "name": "due_date",       "type": "text",   "required": false },
+      { "id": "f_inv_status",    "name": "status",         "type": "text",   "required": false },
+      { "id": "f_inv_notes",     "name": "notes",          "type": "text",   "required": false },
+      { "id": "f_inv_subtotal",  "name": "sub_total",      "type": "number", "required": false },
+      { "id": "f_inv_taxrate",   "name": "tax_rate",       "type": "number", "required": false },
+      { "id": "f_inv_taxamt",    "name": "tax_amount",     "type": "number", "required": false },
+      { "id": "f_inv_total",     "name": "total_amount",   "type": "number", "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  },
+  {
+    "id": "pbc_lineitems001",
+    "name": "invoice_line_items",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_li_invid",  "name": "invoice_id",  "type": "text",   "required": true  },
+      { "id": "f_li_desc",   "name": "description", "type": "text",   "required": false },
+      { "id": "f_li_qty",    "name": "quantity",    "type": "number", "required": false },
+      { "id": "f_li_price",  "name": "unit_price",  "type": "number", "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  },
+  {
+    "id": "pbc_services001",
+    "name": "services",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "f_svc_name",     "name": "name",          "type": "text",   "required": true  },
+      { "id": "f_svc_desc",     "name": "description",   "type": "text",   "required": false },
+      { "id": "f_svc_price",    "name": "default_price", "type": "number", "required": false },
+      { "id": "f_svc_unit",     "name": "unit",          "type": "text",   "required": false },
+      { "id": "f_svc_active",   "name": "is_active",     "type": "bool",   "required": false }
+    ],
+    "indexes": [],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  }
+]

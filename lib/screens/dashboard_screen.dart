@@ -1,0 +1,382 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../providers/app_provider.dart';
+import '../services/theme_service.dart';
+import '../models/booking.dart';
+
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppProvider>();
+    final theme = context.watch<ThemeService>();
+    final today = DateTime.now();
+
+    final occupied = app.occupiedRuns;
+    const totalRuns = 15;
+    final occupancyPct = totalRuns > 0 ? occupied / totalRuns : 0.0;
+
+    final todayActivities = <_Activity>[];
+    for (final b in app.bookings) {
+      if (b.day == today.day && b.month == today.month && b.year == today.year) {
+        todayActivities.add(_Activity(
+          customerName: b.customerName,
+          runName: b.runName,
+          type: 'Check-in',
+          badgeColor: const Color(0xFF4CAF50),
+        ));
+      }
+    }
+    for (final b in app.bookings) {
+      if (b.endDay == today.day &&
+          b.month == today.month &&
+          b.year == today.year &&
+          b.day != today.day) {
+        todayActivities.add(_Activity(
+          customerName: b.customerName,
+          runName: b.runName,
+          type: 'Check-out',
+          badgeColor: const Color(0xFFD4714D),
+        ));
+      }
+    }
+
+    final upcoming = app.bookings
+        .where((b) => DateTime(b.year, b.month, b.day).isAfter(today))
+        .toList()
+      ..sort((a, b) =>
+          DateTime(a.year, a.month, a.day).compareTo(DateTime(b.year, b.month, b.day)));
+    final upcomingSlice = upcoming.take(8).toList();
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBgColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat('EEEE, MMMM d, yyyy').format(today),
+                style: TextStyle(color: theme.subtextColor, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Dashboard',
+                style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Stat cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Occupancy',
+                      value: '$occupied / $totalRuns',
+                      sub: '${(occupancyPct * 100).toStringAsFixed(0)}% full',
+                      valueColor: theme.primaryColor,
+                      progress: occupancyPct,
+                      progressColor: theme.primaryColor,
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Check-ins Today',
+                      value: app.todayCheckIns.toString(),
+                      sub: 'arrivals',
+                      valueColor: const Color(0xFF4CAF50),
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Check-outs Today',
+                      value: app.todayCheckOuts.toString(),
+                      sub: 'departures',
+                      valueColor: const Color(0xFFD4714D),
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Customers',
+                      value: app.customers.length.toString(),
+                      sub: 'on file',
+                      valueColor: const Color(0xFF2196F3),
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Lower two columns
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Card(
+                      theme: theme,
+                      title: "Today's Activity",
+                      child: todayActivities.isEmpty
+                          ? _emptyLabel('No activity today', theme)
+                          : Column(
+                              children: todayActivities
+                                  .map((a) => _ActivityRow(a: a, theme: theme))
+                                  .toList(),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _Card(
+                      theme: theme,
+                      title: 'Upcoming Bookings',
+                      child: upcomingSlice.isEmpty
+                          ? _emptyLabel('No upcoming bookings', theme)
+                          : Column(
+                              children: upcomingSlice
+                                  .map((b) => _UpcomingRow(b: b, today: today, theme: theme))
+                                  .toList(),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyLabel(String text, ThemeService theme) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(text, style: TextStyle(color: theme.subtextColor, fontSize: 13)),
+      );
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String sub;
+  final Color valueColor;
+  final ThemeService theme;
+  final double? progress;
+  final Color? progressColor;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.valueColor,
+    required this.theme,
+    this.progress,
+    this.progressColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardBgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                  color: valueColor, fontSize: 26, fontWeight: FontWeight.bold)),
+          Text(sub, style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+          if (progress != null) ...[
+            const SizedBox(height: 6),
+            LinearProgressIndicator(
+              value: progress,
+              color: progressColor,
+              backgroundColor: theme.borderColor,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  final ThemeService theme;
+  final String title;
+  final Widget child;
+
+  const _Card({required this.theme, required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardBgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _Activity {
+  final String customerName;
+  final String runName;
+  final String type;
+  final Color badgeColor;
+  _Activity(
+      {required this.customerName,
+      required this.runName,
+      required this.type,
+      required this.badgeColor});
+
+  String get initials {
+    final parts = customerName.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return customerName.isEmpty ? '?' : customerName[0].toUpperCase();
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  final _Activity a;
+  final ThemeService theme;
+  const _ActivityRow({required this.a, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: theme.primaryColor,
+            child: Text(a.initials,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(a.customerName,
+                    style: TextStyle(
+                        color: theme.textColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
+                Text(a.runName,
+                    style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: a.badgeColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(a.type,
+                style: const TextStyle(color: Colors.white, fontSize: 10)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpcomingRow extends StatelessWidget {
+  final Booking b;
+  final DateTime today;
+  final ThemeService theme;
+  const _UpcomingRow(
+      {required this.b, required this.today, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final checkIn = DateTime(b.year, b.month, b.day);
+    final checkOut = DateTime(b.year, b.month, b.endDay);
+    final days = checkIn.difference(today).inDays;
+    final dateRange = checkIn == checkOut
+        ? DateFormat('MMM d').format(checkIn)
+        : '${DateFormat('MMM d').format(checkIn)} – ${DateFormat('MMM d').format(checkOut)}';
+    final daysLabel = days == 1 ? 'Tomorrow' : 'In $days days';
+
+    final parts = b.customerName.trim().split(RegExp(r'\s+'));
+    final initials = parts.length >= 2
+        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+        : (b.customerName.isEmpty ? '?' : b.customerName[0].toUpperCase());
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF2196F3),
+            child: Text(initials,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(b.customerName,
+                    style: TextStyle(
+                        color: theme.textColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
+                Text(b.runName,
+                    style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+                Text(dateRange,
+                    style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+              ],
+            ),
+          ),
+          Text(daysLabel,
+              style: TextStyle(color: theme.primaryColor, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}

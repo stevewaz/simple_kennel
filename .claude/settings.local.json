@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/stephenwasielewski/Apps/)",
+      "Read(//Users/stephenwasielewski/Apps/**)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter run *)",
+      "Bash(curl -s \"https://pub.dev/api/packages/pocketbase_drift\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('name','not found'\\), d.get\\('latest',{}\\).get\\('version',''\\)\\)\")",
+      "Bash(curl -s \"https://pub.dev/api/packages/pocketbase\")",
+      "Bash(flutter pub *)",
+      "Bash(xargs cat)",
+      "Bash(flutter devices *)",
+      "Bash(flutter create *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(flutter build *)",
+      "Bash(kill %1)",
+      "Bash(find ~/.pub-cache -path \"*/pocketbase_drift*\" -name \"*.dart\" | head -5)",
+      "Read(//Users/stephenwasielewski/.pub-cache/**)",
+      "Bash(grep -n 'factory\\\\|PocketBase\\\\b\\\\|$PocketBase' ~/.pub-cache/hosted/pub.dev/pocketbase_drift-0.4.3/lib/src/client.dart)",
+      "Bash(xargs grep -l 'class $PocketBase')",
+      "Bash(grep -n 'factory\\\\|$PocketBase\\(' ~/.pub-cache/hosted/pub.dev/pocketbase_drift-0.4.3/lib/src/pocketbase/pocketbase.dart)",
+      "Bash(cp /Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build/sqlite3.wasm /Users/stephenwasielewski/Apps/simple_kennel/web/sqlite3.wasm && echo \"copied\")",
+      "Bash(python3 -c \"import json,sys; pkgs=json.load\\(sys.stdin\\)['packages']; print\\(next\\(p['rootUri'] for p in pkgs if p['name']=='pocketbase'\\)\\)\")",
+      "Bash(open /Users/stephenwasielewski/Apps/simple_kennel/ios/Runner.xcworkspace)",
+      "Bash(grep -v \"^$\")"
+    ],
+    "additionalDirectories": [
+      "/Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build"
+    ]
+  }
+}
