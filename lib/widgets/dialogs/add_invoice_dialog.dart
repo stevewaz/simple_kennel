@@ -144,8 +144,6 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
     final lineItems = _items
         .where((i) => i.desc.text.isNotEmpty)
         .map((i) => InvoiceLineItem(
-              id: DateTime.now().microsecondsSinceEpoch.toString() +
-                  _items.indexOf(i).toString(),
               invoiceId: inv.id,
               description: i.desc.text.trim(),
               quantity: double.tryParse(i.qty.text) ?? 1,
@@ -266,6 +264,8 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                 final lineTotal =
                     (double.tryParse(item.qty.text) ?? 0) *
                         (double.tryParse(item.price.text) ?? 0);
+                final activeServices =
+                    widget.services.where((s) => s.isActive).toList();
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(children: [
@@ -273,10 +273,19 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                         flex: 4,
                         child: TextField(
                           controller: item.desc,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                               hintText: 'Description',
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 6)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              suffixIcon: activeServices.isNotEmpty
+                                  ? IconButton(
+                                      tooltip: 'Pick from catalog',
+                                      icon: Icon(Icons.list_alt_outlined,
+                                          size: 16, color: theme.subtextColor),
+                                      onPressed: () =>
+                                          _pickService(i, activeServices),
+                                    )
+                                  : null),
                           style: TextStyle(color: theme.textColor, fontSize: 13),
                           onChanged: (_) => setState(() {}),
                         )),
@@ -332,16 +341,6 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                 label: Text('Add line item',
                     style: TextStyle(color: theme.primaryColor, fontSize: 13)),
               ),
-
-              // Also allow selecting from service catalog
-              if (widget.services.isNotEmpty)
-                TextButton.icon(
-                  onPressed: _addFromCatalog,
-                  icon: Icon(Icons.library_add_outlined,
-                      color: theme.primaryColor, size: 16),
-                  label: Text('Add from catalog',
-                      style: TextStyle(color: theme.primaryColor, fontSize: 13)),
-                ),
 
               Divider(color: theme.borderColor),
 
@@ -402,32 +401,30 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
     );
   }
 
-  void _addFromCatalog() {
+  void _pickService(int rowIndex, List<Service> services) {
+    final theme = widget.theme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: widget.theme.cardBgColor,
+        backgroundColor: theme.cardBgColor,
         title: Text('Select Service',
-            style: TextStyle(color: widget.theme.textColor)),
+            style: TextStyle(color: theme.textColor)),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
         content: SizedBox(
-          width: 300,
+          width: 320,
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: widget.services
-                .where((s) => s.isActive)
+            children: services
                 .map((s) => ListTile(
                       title: Text(s.name,
-                          style: TextStyle(color: widget.theme.textColor)),
+                          style: TextStyle(color: theme.textColor)),
                       subtitle: Text(s.priceDisplay,
-                          style: TextStyle(color: widget.theme.subtextColor)),
+                          style: TextStyle(color: theme.subtextColor)),
                       onTap: () {
                         setState(() {
-                          _items.add(_LineItemRow(
-                            desc: TextEditingController(text: s.name),
-                            qty: TextEditingController(text: '1'),
-                            price: TextEditingController(
-                                text: s.defaultPrice.toStringAsFixed(2)),
-                          ));
+                          _items[rowIndex].desc.text = s.name;
+                          _items[rowIndex].price.text =
+                              s.defaultPrice.toStringAsFixed(2);
                         });
                         Navigator.pop(ctx);
                       },
