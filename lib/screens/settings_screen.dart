@@ -4,6 +4,7 @@ import '../services/theme_service.dart';
 import '../services/prefs_service.dart';
 import '../providers/app_provider.dart';
 import '../models/service.dart';
+import '../services/runs_service.dart';
 import '../widgets/dialogs/add_service_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -54,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
+    final runs = context.watch<RunsService>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -273,6 +275,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            _SectionLabel('RUNS', theme),
+            _Card(
+              theme: theme,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Number of Runs',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            Text('Total kennel runs on the schedule',
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      _Stepper(
+                        value: runs.count,
+                        min: 1,
+                        max: 50,
+                        theme: theme,
+                        onChanged: (v) => runs.setCount(v),
+                      ),
+                    ],
+                  ),
+                  Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showRunNamesSheet(context, theme, runs),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.edit_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Run Names',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Customize the label for each run',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             _SectionLabel('ABOUT', theme),
             _Card(
               theme: theme,
@@ -295,6 +369,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showRunNamesSheet(
+      BuildContext context, ThemeService theme, RunsService runs) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RunNamesSheet(theme: theme, runs: runs),
     );
   }
 
@@ -586,6 +670,226 @@ class _LabeledField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _Stepper extends StatelessWidget {
+  final int value;
+  final int min;
+  final int max;
+  final ThemeService theme;
+  final ValueChanged<int> onChanged;
+
+  const _Stepper({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.theme,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _StepBtn(
+          icon: Icons.remove,
+          enabled: value > min,
+          theme: theme,
+          onTap: () => onChanged(value - 1),
+        ),
+        SizedBox(
+          width: 36,
+          child: Text(
+            '$value',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: theme.primaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold),
+          ),
+        ),
+        _StepBtn(
+          icon: Icons.add,
+          enabled: value < max,
+          theme: theme,
+          onTap: () => onChanged(value + 1),
+        ),
+      ],
+    );
+  }
+}
+
+class _StepBtn extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final ThemeService theme;
+  final VoidCallback onTap;
+
+  const _StepBtn(
+      {required this.icon,
+      required this.enabled,
+      required this.theme,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: enabled
+              ? theme.primaryColor.withValues(alpha: 0.15)
+              : theme.borderColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon,
+            size: 18,
+            color: enabled ? theme.primaryColor : theme.subtextColor),
+      ),
+    );
+  }
+}
+
+class _RunNamesSheet extends StatefulWidget {
+  final ThemeService theme;
+  final RunsService runs;
+
+  const _RunNamesSheet({required this.theme, required this.runs});
+
+  @override
+  State<_RunNamesSheet> createState() => _RunNamesSheetState();
+}
+
+class _RunNamesSheetState extends State<_RunNamesSheet> {
+  late List<TextEditingController> _ctrls;
+
+  @override
+  void initState() {
+    super.initState();
+    _buildControllers();
+  }
+
+  void _buildControllers() {
+    _ctrls = List.generate(
+      widget.runs.count,
+      (i) => TextEditingController(text: widget.runs.getName(i)),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final c in _ctrls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final count = widget.runs.count;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Run Names',
+                        style: TextStyle(
+                            color: theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: theme.borderColor, height: 1),
+            Expanded(
+              child: ListView.builder(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                itemCount: count,
+                itemBuilder: (_, i) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.cardBgColor,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: theme.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('${i + 1}',
+                            style: TextStyle(
+                                color: theme.primaryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _ctrls[i],
+                          decoration: InputDecoration(
+                            hintText: 'Run ${i + 1}',
+                            hintStyle:
+                                TextStyle(color: theme.subtextColor),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          style:
+                              TextStyle(color: theme.textColor, fontSize: 14),
+                          onChanged: (v) => widget.runs.setName(i, v),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

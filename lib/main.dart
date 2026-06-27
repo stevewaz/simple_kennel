@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/database_service.dart';
 import 'services/theme_service.dart';
+import 'services/runs_service.dart';
 import 'services/prefs_service.dart';
 import 'services/pocketbase_service.dart';
 import 'providers/app_provider.dart';
@@ -23,6 +24,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeService()),
+        ChangeNotifierProvider(create: (_) => RunsService()),
         ChangeNotifierProvider(create: (_) => AppProvider(db)),
       ],
       child: const SimpleKennelApp(),

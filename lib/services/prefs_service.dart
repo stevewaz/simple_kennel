@@ -41,4 +41,19 @@ class PrefsService {
   // Network role
   static String get networkRole => _p.getString('NetworkRole') ?? 'client';
   static set networkRole(String v) => _p.setString('NetworkRole', v);
+
+  // Runs
+  static int get runCount => (_p.getInt('RunCount') ?? 15).clamp(1, 50);
+  static set runCount(int v) => _p.setInt('RunCount', v.clamp(1, 50));
+
+  static String getRunName(int index) =>
+      _p.getString('RunName_$index') ?? 'Run ${index + 1}';
+
+  static void setRunName(int index, String name) {
+    if (name.trim().isEmpty) {
+      _p.remove('RunName_$index');
+    } else {
+      _p.setString('RunName_$index', name.trim());
+    }
+  }
 }

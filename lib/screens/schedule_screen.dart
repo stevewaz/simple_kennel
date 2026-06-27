@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
+import '../services/runs_service.dart';
 import '../models/booking.dart';
 import '../widgets/dialogs/add_booking_dialog.dart';
 import '../widgets/dialogs/view_booking_dialog.dart';
@@ -62,8 +63,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
     final theme = context.watch<ThemeService>();
+    final runs = context.watch<RunsService>();
     final days = _daysInMonth;
     final today = DateTime.now();
+    final runCount = runs.count;
+    final runNames = runs.names;
 
     // Build lookup: key -> booking
     final Map<String, Booking> cellMap = {};
@@ -75,9 +79,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         }
       }
     }
-
-    final runNames =
-        List.generate(kTotalRuns, (i) => 'Run ${i + 1}');
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -193,7 +194,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       child: Column(
                         children: List.generate(
-                          kTotalRuns,
+                          runCount,
                           (i) => Container(
                             height: kCellH,
                             decoration: BoxDecoration(
@@ -222,9 +223,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       boundaryMargin: EdgeInsets.zero,
                       child: SizedBox(
                           width: kCellW * days,
-                          height: kTotalRuns * kCellH,
+                          height: runCount * kCellH,
                           child: Column(
-                            children: List.generate(kTotalRuns, (runI) {
+                            children: List.generate(runCount, (runI) {
                               return Row(
                                 children: List.generate(days, (dayI) {
                                   final d = dayI + 1;
