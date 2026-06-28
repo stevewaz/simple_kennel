@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/booking.dart';
+import '../../models/pet.dart';
 import '../../services/theme_service.dart';
 
-class ViewBookingDialog extends StatelessWidget {
+class ViewBookingDialog extends StatefulWidget {
   final Booking booking;
   final Future<void> Function(Booking) onUpdate;
   final Future<void> Function() onDelete;
   final ThemeService theme;
+  final Future<List<Pet>> Function(String customerId) getPets;
 
   const ViewBookingDialog({
     super.key,
@@ -15,13 +17,38 @@ class ViewBookingDialog extends StatelessWidget {
     required this.onUpdate,
     required this.onDelete,
     required this.theme,
+    required this.getPets,
   });
 
   @override
+  State<ViewBookingDialog> createState() => _ViewBookingDialogState();
+}
+
+class _ViewBookingDialogState extends State<ViewBookingDialog> {
+  List<Pet> _pets = [];
+  bool _loadingPets = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.booking.customerId.isNotEmpty) {
+      _loadingPets = true;
+      widget.getPets(widget.booking.customerId).then((pets) {
+        if (mounted) {
+          setState(() {
+            _pets = pets;
+            _loadingPets = false;
+          });
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isCheckedIn = booking.status == 'CheckedIn';
-    final checkIn = booking.checkInDate;
-    final checkOut = booking.checkOutDate;
+    final theme = widget.theme;
+    final b = widget.booking;
+    final isCheckedIn = b.status == 'CheckedIn';
 
     return AlertDialog(
       backgroundColor: theme.cardBgColor,
@@ -30,7 +57,7 @@ class ViewBookingDialog extends StatelessWidget {
           CircleAvatar(
             backgroundColor: theme.primaryColor,
             radius: 20,
-            child: Text(_initials(booking.customerName),
+            child: Text(_initials(b.customerName),
                 style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -41,14 +68,14 @@ class ViewBookingDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(booking.customerName,
+                Text(b.customerName,
                     style: TextStyle(
                         color: theme.textColor,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
-                Text(booking.runName,
-                    style: TextStyle(
-                        color: theme.subtextColor, fontSize: 12)),
+                Text(b.runName,
+                    style:
+                        TextStyle(color: theme.subtextColor, fontSize: 12)),
               ],
             ),
           ),
@@ -58,14 +85,53 @@ class ViewBookingDialog extends StatelessWidget {
         width: 360,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _InfoRow('Check-in',
-                DateFormat('MMM d, yyyy').format(checkIn), theme),
+            _InfoRow(
+              'Check-in',
+              '${DateFormat('MMM d, yyyy').format(b.checkInDate)} · ${b.checkInTime}',
+              theme,
+            ),
             _InfoRow('Check-out',
-                DateFormat('MMM d, yyyy').format(checkOut), theme),
-            _InfoRow('Status', booking.status, theme),
-            if (booking.notes.isNotEmpty)
-              _InfoRow('Notes', booking.notes, theme),
+                DateFormat('MMM d, yyyy').format(b.checkOutDate), theme),
+            _InfoRow('Status', b.status, theme),
+            if (b.notes.isNotEmpty) _InfoRow('Notes', b.notes, theme),
+
+            const SizedBox(height: 12),
+            Divider(color: theme.borderColor),
+            const SizedBox(height: 8),
+
+            // Pets section
+            Row(
+              children: [
+                Icon(Icons.pets, size: 14, color: theme.subtextColor),
+                const SizedBox(width: 6),
+                Text('Pets',
+                    style: TextStyle(
+                        color: theme.subtextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5)),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            if (_loadingPets)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: theme.primaryColor),
+                ),
+              )
+            else if (_pets.isEmpty)
+              Text('No pets on file',
+                  style:
+                      TextStyle(color: theme.subtextColor, fontSize: 13))
+            else
+              ..._pets.map((p) => _PetCard(pet: p, theme: theme)),
           ],
         ),
       ),
@@ -76,7 +142,7 @@ class ViewBookingDialog extends StatelessWidget {
                 Text('Close', style: TextStyle(color: theme.subtextColor))),
         TextButton(
           onPressed: () {
-            onDelete();
+            widget.onDelete();
             Navigator.pop(context);
           },
           child: const Text('Delete',
@@ -84,11 +150,12 @@ class ViewBookingDialog extends StatelessWidget {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isCheckedIn ? const Color(0xFFD4714D) : const Color(0xFF4CAF50),
+              backgroundColor: isCheckedIn
+                  ? const Color(0xFFD4714D)
+                  : const Color(0xFF4CAF50),
               foregroundColor: Colors.white),
           onPressed: () {
-            onUpdate(booking.copyWith(
+            widget.onUpdate(b.copyWith(
                 status: isCheckedIn ? 'Scheduled' : 'CheckedIn'));
             Navigator.pop(context);
           },
@@ -105,6 +172,51 @@ class ViewBookingDialog extends StatelessWidget {
   }
 }
 
+class _PetCard extends StatelessWidget {
+  final Pet pet;
+  final ThemeService theme;
+  const _PetCard({required this.pet, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final details = [
+      if (pet.species.isNotEmpty) pet.species,
+      if (pet.breed.isNotEmpty) pet.breed,
+      if (pet.age > 0) '${pet.age} yr${pet.age == 1 ? '' : 's'}',
+    ].join(' · ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.primaryColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(pet.name,
+              style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold)),
+          if (details.isNotEmpty)
+            Text(details,
+                style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+          if (pet.notes.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(pet.notes,
+                  style:
+                      TextStyle(color: theme.subtextColor, fontSize: 11)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -114,8 +226,9 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 80,

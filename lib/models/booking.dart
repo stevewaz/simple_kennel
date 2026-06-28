@@ -8,6 +8,7 @@ String _pbId() {
 
 class Booking {
   String id;
+  String customerId;
   String customerName;
   int day;
   int month;
@@ -17,9 +18,11 @@ class Booking {
   String runName;
   String notes;
   String status; // Scheduled | CheckedIn
+  String checkInTime; // AM | PM
 
   Booking({
     String? id,
+    this.customerId = '',
     this.customerName = '',
     required this.day,
     required this.month,
@@ -29,6 +32,7 @@ class Booking {
     this.runName = '',
     this.notes = '',
     this.status = 'Scheduled',
+    this.checkInTime = 'AM',
   }) : id = id ?? _pbId();
 
   DateTime get checkInDate => DateTime(year, month, day);
@@ -41,6 +45,7 @@ class Booking {
 
   Map<String, dynamic> toMap() => {
         'id': id,
+        'customer_id': customerId,
         'customerName': customerName,
         'day': day,
         'month': month,
@@ -50,10 +55,12 @@ class Booking {
         'KennelName': runName,
         'notes': notes,
         'status': status,
+        'check_in_time': checkInTime,
       };
 
   factory Booking.fromMap(Map<String, dynamic> m) => Booking(
         id: m['id'] as String,
+        customerId: m['customer_id'] as String? ?? '',
         customerName: m['customerName'] as String? ?? '',
         day: m['day'] as int? ?? 1,
         month: m['month'] as int? ?? 1,
@@ -63,10 +70,13 @@ class Booking {
         runName: m['KennelName'] as String? ?? '',
         notes: m['notes'] as String? ?? '',
         status: m['status'] as String? ?? 'Scheduled',
+        checkInTime: m['check_in_time'] as String? ?? 'AM',
       );
 
-  Booking copyWith({String? status, String? notes}) => Booking(
+  Booking copyWith({String? status, String? notes, String? checkInTime}) =>
+      Booking(
         id: id,
+        customerId: customerId,
         customerName: customerName,
         day: day,
         month: month,
@@ -76,5 +86,6 @@ class Booking {
         runName: runName,
         notes: notes ?? this.notes,
         status: status ?? this.status,
+        checkInTime: checkInTime ?? this.checkInTime,
       );
 }

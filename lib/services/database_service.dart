@@ -108,6 +108,7 @@ class DatabaseService {
 
   Booking _toBooking(RecordModel r) => Booking(
         id: r.id,
+        customerId: r.getStringValue('customer_id'),
         customerName: r.getStringValue('customer_name'),
         day: r.getIntValue('day'),
         month: r.getIntValue('month'),
@@ -119,6 +120,9 @@ class DatabaseService {
         status: r.getStringValue('status').isEmpty
             ? 'Scheduled'
             : r.getStringValue('status'),
+        checkInTime: r.getStringValue('check_in_time').isEmpty
+            ? 'AM'
+            : r.getStringValue('check_in_time'),
       );
 
   Future<List<Booking>> getBookings() async {
@@ -128,6 +132,7 @@ class DatabaseService {
   }
 
   Future<void> saveBooking(Booking b) => _upsert('bookings', b.id, {
+        'customer_id': b.customerId,
         'customer_name': b.customerName,
         'day': b.day,
         'month': b.month,
@@ -137,6 +142,7 @@ class DatabaseService {
         'kennel_name': b.runName,
         'notes': b.notes,
         'status': b.status,
+        'check_in_time': b.checkInTime,
       });
 
   Future<void> deleteBooking(Booking b) =>

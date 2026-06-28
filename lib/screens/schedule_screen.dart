@@ -275,15 +275,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       child: booking != null && booking.day == d
                                           ? Padding(
                                               padding: const EdgeInsets.all(4),
-                                              child: Text(
-                                                booking.customerName,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 9,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                overflow:
-                                                    TextOverflow.ellipsis,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    booking.customerName,
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    booking.checkInTime,
+                                                    style: TextStyle(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                                alpha: 0.8),
+                                                        fontSize: 8),
+                                                  ),
+                                                ],
                                               ),
                                             )
                                           : null,
@@ -364,6 +380,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         onUpdate: (updated) => app.saveBooking(updated),
         onDelete: () => app.deleteBooking(b),
         theme: theme,
+        getPets: (customerId) => app.getPets(customerId),
       ),
     );
   }

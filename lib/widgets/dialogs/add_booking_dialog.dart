@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../models/booking.dart';
 import '../../models/customer.dart';
 import '../../services/theme_service.dart';
+import '../../services/runs_service.dart';
 
 class AddBookingDialog extends StatefulWidget {
   final int initialDay;
@@ -36,6 +38,7 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
   Customer? _customer;
   late DateTime _checkIn;
   late DateTime _checkOut;
+  String _checkInTime = 'AM';
   final _notesCtrl = TextEditingController();
   bool _saving = false;
 
@@ -79,6 +82,7 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
     if (_customer == null) return;
     setState(() => _saving = true);
     final booking = Booking(
+      customerId: _customer!.id,
       customerName: _customer!.name,
       day: _checkIn.day,
       month: _checkIn.month,
@@ -87,6 +91,7 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
       runIndex: _runIndex,
       runName: _runName,
       notes: _notesCtrl.text.trim(),
+      checkInTime: _checkInTime,
     );
     await widget.onSave(booking);
     if (mounted) Navigator.pop(context);
@@ -95,10 +100,11 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = widget.theme;
+    final runs = context.watch<RunsService>();
+
     return AlertDialog(
       backgroundColor: theme.cardBgColor,
-      title:
-          Text('New Booking', style: TextStyle(color: theme.textColor)),
+      title: Text('New Booking', style: TextStyle(color: theme.textColor)),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -118,30 +124,42 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
               onChanged: (v) => setState(() => _customer = v),
             ),
             const SizedBox(height: 12),
-            // Run selector
+            // Run selector (uses RunsService for names/count)
             DropdownButtonFormField<int>(
-              initialValue: _runIndex,
+              initialValue: _runIndex < runs.count ? _runIndex : 0,
               decoration: InputDecoration(
                   labelText: 'Run',
                   labelStyle: TextStyle(color: theme.subtextColor)),
               dropdownColor: theme.cardBgColor,
               style: TextStyle(color: theme.textColor),
               items: List.generate(
-                  15,
+                  runs.count,
                   (i) => DropdownMenuItem(
-                      value: i, child: Text('Run ${i + 1}'))).toList(),
+                      value: i, child: Text(runs.getName(i)))).toList(),
               onChanged: (v) => setState(() {
                 _runIndex = v!;
-                _runName = 'Run ${v + 1}';
+                _runName = runs.getName(v);
               }),
             ),
             const SizedBox(height: 12),
-            // Check-in date
-            _DateRow(
-              label: 'Check-in',
-              date: _checkIn,
-              theme: theme,
-              onTap: () => _pickDate(true),
+            // Check-in date + AM/PM toggle on same row
+            Row(
+              children: [
+                Expanded(
+                  child: _DateRow(
+                    label: 'Check-in',
+                    date: _checkIn,
+                    theme: theme,
+                    onTap: () => _pickDate(true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _AmPmToggle(
+                  value: _checkInTime,
+                  theme: theme,
+                  onChanged: (v) => setState(() => _checkInTime = v),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             _DateRow(
@@ -175,6 +193,50 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
           child: Text(_saving ? 'Saving…' : 'Save Booking'),
         ),
       ],
+    );
+  }
+}
+
+class _AmPmToggle extends StatelessWidget {
+  final String value;
+  final ThemeService theme;
+  final ValueChanged<String> onChanged;
+
+  const _AmPmToggle(
+      {required this.value, required this.theme, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.borderColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: ['AM', 'PM'].map((t) {
+          final selected = value == t;
+          return GestureDetector(
+            onTap: () => onChanged(t),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: selected ? theme.primaryColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Text(
+                t,
+                style: TextStyle(
+                  color: selected ? Colors.white : theme.subtextColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
