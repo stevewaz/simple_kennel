@@ -5,6 +5,7 @@ import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../models/invoice.dart';
 import '../widgets/dialogs/add_invoice_dialog.dart';
+import '../utils/invoice_pdf.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -203,6 +204,13 @@ class _InvoiceTile extends StatelessWidget {
           color: theme.cardBgColor,
           itemBuilder: (_) => [
             PopupMenuItem(
+                value: 'print',
+                child: Row(children: [
+                  const Icon(Icons.print, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Print', style: TextStyle(color: theme.textColor)),
+                ])),
+            PopupMenuItem(
                 value: 'edit',
                 child: Text('Edit', style: TextStyle(color: theme.textColor))),
             ..._statuses(inv.status).map((s) => PopupMenuItem(
@@ -226,7 +234,10 @@ class _InvoiceTile extends StatelessWidget {
   }
 
   void _onAction(BuildContext context, String action) async {
-    if (action == 'delete') {
+    if (action == 'print') {
+      final items = await app.getLineItems(inv.id);
+      await printInvoice(inv, items);
+    } else if (action == 'delete') {
       app.deleteInvoice(inv);
     } else if (action == 'edit') {
       final items = await app.getLineItems(inv.id);
