@@ -25,6 +25,7 @@ class DashboardScreen extends StatelessWidget {
           customerName: b.customerName,
           runName: b.runName,
           type: 'Check-in',
+          checkInTime: b.checkInTime,
           badgeColor: const Color(0xFF4CAF50),
         ));
       }
@@ -38,6 +39,7 @@ class DashboardScreen extends StatelessWidget {
           customerName: b.customerName,
           runName: b.runName,
           type: 'Check-out',
+          checkInTime: null,
           badgeColor: const Color(0xFFD4714D),
         ));
       }
@@ -49,6 +51,12 @@ class DashboardScreen extends StatelessWidget {
       ..sort((a, b) =>
           DateTime(a.year, a.month, a.day).compareTo(DateTime(b.year, b.month, b.day)));
     final upcomingSlice = upcoming.take(8).toList();
+
+    final amCount = app.todayAmCheckIns;
+    final pmCount = app.todayPmCheckIns;
+    final checkInSub = amCount == 0 && pmCount == 0
+        ? 'arrivals'
+        : '$amCount AM · $pmCount PM';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -92,7 +100,7 @@ class DashboardScreen extends StatelessWidget {
                     child: _StatCard(
                       label: 'Check-ins Today',
                       value: app.todayCheckIns.toString(),
-                      sub: 'arrivals',
+                      sub: checkInSub,
                       valueColor: const Color(0xFF4CAF50),
                       theme: theme,
                     ),
@@ -257,12 +265,15 @@ class _Activity {
   final String customerName;
   final String runName;
   final String type;
+  final String? checkInTime;
   final Color badgeColor;
-  _Activity(
-      {required this.customerName,
-      required this.runName,
-      required this.type,
-      required this.badgeColor});
+  _Activity({
+    required this.customerName,
+    required this.runName,
+    required this.type,
+    required this.checkInTime,
+    required this.badgeColor,
+  });
 
   String get initials {
     final parts = customerName.trim().split(RegExp(r'\s+'));
@@ -306,14 +317,33 @@ class _ActivityRow extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: a.badgeColor,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(a.type,
-                style: const TextStyle(color: Colors.white, fontSize: 10)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (a.checkInTime != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: a.checkInTime == 'AM'
+                        ? const Color(0xFF1976D2)
+                        : const Color(0xFF7B1FA2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(a.checkInTime!,
+                      style: const TextStyle(color: Colors.white, fontSize: 10)),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: a.badgeColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(a.type,
+                    style: const TextStyle(color: Colors.white, fontSize: 10)),
+              ),
+            ],
           ),
         ],
       ),

@@ -152,6 +152,28 @@ class AppProvider extends ChangeNotifier {
         .length;
   }
 
+  int get todayAmCheckIns {
+    final today = DateTime.now();
+    return bookings
+        .where((b) =>
+            b.day == today.day &&
+            b.month == today.month &&
+            b.year == today.year &&
+            b.checkInTime == 'AM')
+        .length;
+  }
+
+  int get todayPmCheckIns {
+    final today = DateTime.now();
+    return bookings
+        .where((b) =>
+            b.day == today.day &&
+            b.month == today.month &&
+            b.year == today.year &&
+            b.checkInTime == 'PM')
+        .length;
+  }
+
   int get todayCheckOuts {
     final today = DateTime.now();
     return bookings
