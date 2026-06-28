@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/booking.dart';
 import '../../models/pet.dart';
+import '../../services/prefs_service.dart';
 import '../../services/theme_service.dart';
 
 class ViewBookingDialog extends StatefulWidget {
@@ -28,6 +31,7 @@ class ViewBookingDialog extends StatefulWidget {
 
 class _ViewBookingDialogState extends State<ViewBookingDialog> {
   List<Pet> _pets = [];
+  Map<String, List<String>> _petPhotos = {};
   bool _loadingPets = false;
 
   @override
@@ -39,6 +43,10 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
         if (mounted) {
           setState(() {
             _pets = pets;
+            _petPhotos = {
+              for (final p in pets)
+                p.id: PrefsService.getPetPhotos(p.id),
+            };
             _loadingPets = false;
           });
         }
@@ -141,7 +149,11 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
                   style:
                       TextStyle(color: theme.subtextColor, fontSize: 13))
             else
-              ..._pets.map((p) => _PetCard(pet: p, theme: theme)),
+              ..._pets.map((p) => _PetCard(
+                    pet: p,
+                    photos: _petPhotos[p.id] ?? [],
+                    theme: theme,
+                  )),
           ],
         ),
       ),
@@ -184,8 +196,9 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
 
 class _PetCard extends StatelessWidget {
   final Pet pet;
+  final List<String> photos;
   final ThemeService theme;
-  const _PetCard({required this.pet, required this.theme});
+  const _PetCard({required this.pet, required this.photos, required this.theme});
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +234,33 @@ class _PetCard extends StatelessWidget {
                   style:
                       TextStyle(color: theme.subtextColor, fontSize: 11)),
             ),
+          if (!kIsWeb && photos.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 72,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photos.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 6),
+                itemBuilder: (_, i) => ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.file(
+                    File(photos[i]),
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      width: 72,
+                      height: 72,
+                      color: theme.borderColor,
+                      child: Icon(Icons.broken_image,
+                          size: 20, color: theme.subtextColor),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

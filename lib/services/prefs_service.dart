@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefsService {
@@ -59,4 +60,20 @@ class PrefsService {
       _p.setString('RunName_$index', name.trim());
     }
   }
+
+  // Pet photos (local file paths, stored per petId)
+  static List<String> getPetPhotos(String petId) {
+    final raw = _p.getString('pet_photos_$petId');
+    if (raw == null) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<String>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static void setPetPhotos(String petId, List<String> paths) =>
+      _p.setString('pet_photos_$petId', jsonEncode(paths));
+
+  static void removePetPhotos(String petId) => _p.remove('pet_photos_$petId');
 }
