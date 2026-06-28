@@ -8,6 +8,7 @@ import '../models/booking.dart';
 import '../models/pet.dart';
 import '../widgets/dialogs/add_booking_dialog.dart';
 import '../widgets/dialogs/view_booking_dialog.dart';
+import '../widgets/dialogs/add_customer_dialog.dart';
 
 const int kTotalRuns = 15;
 const double kCellW = 52;
@@ -423,6 +424,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         onDelete: () => app.deleteBooking(b),
         theme: theme,
         getPets: (customerId) => app.getPets(customerId),
+        onEditCustomer: (customerId) async {
+          final customer =
+              app.customers.where((c) => c.id == customerId).firstOrNull;
+          if (customer == null) return;
+          final pets = await app.getPets(customerId);
+          if (!context.mounted) return;
+          Navigator.pop(context);
+          showDialog(
+            context: context,
+            builder: (_) => AddCustomerDialog(
+              existing: customer,
+              initialPets: pets,
+              onSave: (c, toSave, toDelete) async {
+                await app.saveCustomer(c);
+                for (final p in toSave) {
+                  await app.savePet(p);
+                }
+                for (final p in toDelete) {
+                  await app.deletePet(p);
+                }
+              },
+              theme: theme,
+            ),
+          );
+        },
       ),
     );
   }

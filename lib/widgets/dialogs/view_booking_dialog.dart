@@ -10,6 +10,7 @@ class ViewBookingDialog extends StatefulWidget {
   final Future<void> Function() onDelete;
   final ThemeService theme;
   final Future<List<Pet>> Function(String customerId) getPets;
+  final Future<void> Function(String customerId)? onEditCustomer;
 
   const ViewBookingDialog({
     super.key,
@@ -18,6 +19,7 @@ class ViewBookingDialog extends StatefulWidget {
     required this.onDelete,
     required this.theme,
     required this.getPets,
+    this.onEditCustomer,
   });
 
   @override
@@ -79,6 +81,14 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
               ],
             ),
           ),
+          if (widget.onEditCustomer != null && b.customerId.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.edit, size: 18, color: theme.subtextColor),
+              tooltip: 'Edit customer',
+              onPressed: () => widget.onEditCustomer!(b.customerId),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
         ],
       ),
       content: SizedBox(
