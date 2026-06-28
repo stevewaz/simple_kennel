@@ -5,6 +5,7 @@ import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../services/runs_service.dart';
 import '../models/booking.dart';
+import '../models/pet.dart';
 import '../widgets/dialogs/add_booking_dialog.dart';
 import '../widgets/dialogs/view_booking_dialog.dart';
 
@@ -27,11 +28,38 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final _leftScroll = ScrollController();
   final _transform = TransformationController();
 
+  // customerId -> pets, populated lazily per visible month
+  final Map<String, List<Pet>> _petsCache = {};
+  final Set<String> _fetchedIds = {};
+
   @override
   void initState() {
     super.initState();
     _month = DateTime(DateTime.now().year, DateTime.now().month);
     _transform.addListener(_onTransform);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadPetsForMonth(context.read<AppProvider>());
+  }
+
+  Future<void> _loadPetsForMonth(AppProvider app) async {
+    final ids = app.bookings
+        .where((b) =>
+            b.month == _month.month &&
+            b.year == _month.year &&
+            b.customerId.isNotEmpty)
+        .map((b) => b.customerId)
+        .toSet()
+        .difference(_fetchedIds);
+
+    for (final id in ids) {
+      _fetchedIds.add(id);
+      final pets = await app.getPets(id);
+      if (mounted) setState(() => _petsCache[id] = pets);
+    }
   }
 
   void _onTransform() {
@@ -93,8 +121,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _NavBtn(
                     icon: Icons.chevron_left,
                     color: theme.primaryColor,
-                    onTap: () => setState(() => _month =
-                        DateTime(_month.year, _month.month - 1)),
+                    onTap: () {
+                      setState(() => _month =
+                          DateTime(_month.year, _month.month - 1));
+                      _loadPetsForMonth(app);
+                    },
                   ),
                   Expanded(
                     child: Text(
@@ -110,8 +141,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _NavBtn(
                     icon: Icons.chevron_right,
                     color: theme.primaryColor,
-                    onTap: () => setState(() => _month =
-                        DateTime(_month.year, _month.month + 1)),
+                    onTap: () {
+                      setState(() => _month =
+                          DateTime(_month.year, _month.month + 1));
+                      _loadPetsForMonth(app);
+                    },
                   ),
                 ],
               ),
@@ -282,7 +316,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                     MainAxisAlignment.center,
                                                 children: [
                                                   Text(
-                                                    booking.customerName,
+                                                    _cellLabel(booking),
                                                     style: const TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 9,
@@ -352,6 +386,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  String _cellLabel(Booking booking) {
+    final pets = _petsCache[booking.customerId];
+    if (pets != null && pets.isNotEmpty) {
+      return pets.map((p) => p.name).join(', ');
+    }
+    return booking.customerName;
   }
 
   void _addBooking(BuildContext context, int day, int runIndex, String runName,
