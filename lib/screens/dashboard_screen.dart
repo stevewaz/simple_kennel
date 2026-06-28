@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../models/booking.dart';
+import '../models/customer.dart';
+import '../widgets/dialogs/add_invoice_dialog.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -22,8 +24,7 @@ class DashboardScreen extends StatelessWidget {
     for (final b in app.bookings) {
       if (b.day == today.day && b.month == today.month && b.year == today.year) {
         todayActivities.add(_Activity(
-          customerName: b.customerName,
-          runName: b.runName,
+          booking: b,
           type: 'Check-in',
           checkInTime: b.checkInTime,
           badgeColor: const Color(0xFF4CAF50),
@@ -36,8 +37,7 @@ class DashboardScreen extends StatelessWidget {
           b.year == today.year &&
           b.day != today.day) {
         todayActivities.add(_Activity(
-          customerName: b.customerName,
-          runName: b.runName,
+          booking: b,
           type: 'Check-out',
           checkInTime: null,
           badgeColor: const Color(0xFFD4714D),
@@ -142,7 +142,20 @@ class DashboardScreen extends StatelessWidget {
                           ? _emptyLabel('No activity today', theme)
                           : Column(
                               children: todayActivities
-                                  .map((a) => _ActivityRow(a: a, theme: theme))
+                                  .map((a) => _ActivityRow(
+                                        a: a,
+                                        theme: theme,
+                                        onCheckIn: a.type == 'Check-in' &&
+                                                a.booking.status != 'CheckedIn'
+                                            ? () => app.saveBooking(
+                                                a.booking.copyWith(
+                                                    status: 'CheckedIn'))
+                                            : null,
+                                        onInvoice: a.type == 'Check-in'
+                                            ? () => _openInvoice(
+                                                context, a.booking, app, theme)
+                                            : null,
+                                      ))
                                   .toList(),
                             ),
                     ),
@@ -166,6 +179,29 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _openInvoice(BuildContext context, Booking booking, AppProvider app,
+      ThemeService theme) {
+    final customer = app.customers
+        .where((c) => c.id == booking.customerId)
+        .cast<Customer?>()
+        .firstOrNull;
+    showDialog(
+      context: context,
+      builder: (_) => AddInvoiceDialog(
+        initialCustomer: customer,
+        initialBooking: booking,
+        customers: app.customers,
+        bookings: app.bookings,
+        services: app.services,
+        getNextInvoiceNumber: app.getNextInvoiceNumber,
+        hasInvoiceForBooking: app.hasInvoiceForBooking,
+        defaultTaxRate: 0,
+        onSave: (inv, items) => app.saveInvoice(inv, items),
+        theme: theme,
       ),
     );
   }
@@ -262,18 +298,20 @@ class _Card extends StatelessWidget {
 }
 
 class _Activity {
-  final String customerName;
-  final String runName;
+  final Booking booking;
   final String type;
   final String? checkInTime;
   final Color badgeColor;
+
   _Activity({
-    required this.customerName,
-    required this.runName,
+    required this.booking,
     required this.type,
     required this.checkInTime,
     required this.badgeColor,
   });
+
+  String get customerName => booking.customerName;
+  String get runName => booking.runName;
 
   String get initials {
     final parts = customerName.trim().split(RegExp(r'\s+'));
@@ -285,17 +323,29 @@ class _Activity {
 class _ActivityRow extends StatelessWidget {
   final _Activity a;
   final ThemeService theme;
-  const _ActivityRow({required this.a, required this.theme});
+  final VoidCallback? onCheckIn;
+  final VoidCallback? onInvoice;
+
+  const _ActivityRow({
+    required this.a,
+    required this.theme,
+    this.onCheckIn,
+    this.onInvoice,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isCheckedIn = a.booking.status == 'CheckedIn';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: theme.primaryColor,
+            backgroundColor: isCheckedIn
+                ? const Color(0xFF4CAF50)
+                : theme.primaryColor,
             child: Text(a.initials,
                 style: const TextStyle(
                     color: Colors.white,
@@ -320,6 +370,7 @@ class _ActivityRow extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // AM/PM pill for check-ins
               if (a.checkInTime != null) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -334,18 +385,71 @@ class _ActivityRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
               ],
+              // Type badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: a.badgeColor,
+                  color: isCheckedIn
+                      ? const Color(0xFF4CAF50)
+                      : a.badgeColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(a.type,
-                    style: const TextStyle(color: Colors.white, fontSize: 10)),
+                child: Text(
+                  isCheckedIn && a.type == 'Check-in' ? 'Checked In' : a.type,
+                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                ),
               ),
+              // Check-in action button
+              if (a.type == 'Check-in') ...[
+                const SizedBox(width: 4),
+                _ActionIcon(
+                  icon: isCheckedIn ? Icons.check_circle : Icons.login,
+                  color: isCheckedIn
+                      ? const Color(0xFF4CAF50)
+                      : theme.primaryColor,
+                  tooltip: isCheckedIn ? 'Checked in' : 'Mark checked in',
+                  onTap: onCheckIn,
+                ),
+                const SizedBox(width: 2),
+                _ActionIcon(
+                  icon: Icons.receipt_long,
+                  color: theme.subtextColor,
+                  tooltip: 'Create draft invoice',
+                  onTap: onInvoice,
+                ),
+              ],
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _ActionIcon({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, size: 18, color: onTap == null ? color.withValues(alpha: 0.4) : color),
+        ),
       ),
     );
   }

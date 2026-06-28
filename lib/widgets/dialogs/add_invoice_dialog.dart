@@ -19,10 +19,15 @@ class AddInvoiceDialog extends StatefulWidget {
   final Future<void> Function(Invoice, List<InvoiceLineItem>) onSave;
   final ThemeService theme;
 
+  final Customer? initialCustomer;
+  final Booking? initialBooking;
+
   const AddInvoiceDialog({
     super.key,
     this.existing,
     this.existingItems = const [],
+    this.initialCustomer,
+    this.initialBooking,
     required this.customers,
     required this.bookings,
     required this.services,
@@ -75,6 +80,8 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
               ))
           .toList();
     } else {
+      _customer = widget.initialCustomer;
+      _booking = widget.initialBooking;
       _items = [_LineItemRow.empty()];
       _loadInvoiceNumber();
     }
