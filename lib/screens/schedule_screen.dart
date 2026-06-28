@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
@@ -120,7 +121,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               child: Row(
                 children: [
                   _NavBtn(
-                    icon: Icons.chevron_left,
+                    mirror: true,
                     color: theme.primaryColor,
                     onTap: () {
                       setState(() => _month =
@@ -140,7 +141,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
                   _NavBtn(
-                    icon: Icons.chevron_right,
+                    mirror: false,
                     color: theme.primaryColor,
                     onTap: () {
                       setState(() => _month =
@@ -458,12 +459,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 }
 
+const _kPawSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <ellipse cx="9" cy="4.2" rx="2.4" ry="3"/>
+  <ellipse cx="15" cy="4.2" rx="2.4" ry="3"/>
+  <ellipse cx="4.2" cy="9.2" rx="1.9" ry="2.6"/>
+  <ellipse cx="19.8" cy="9.2" rx="1.9" ry="2.6"/>
+  <path d="M12,11c-3.8,0-6.6,2.5-6.6,5.6c0,3,2.7,5,6.6,5s6.6-2,6.6-5C18.6,13.5,15.8,11,12,11z"/>
+</svg>
+''';
+
 class _NavBtn extends StatelessWidget {
-  final IconData icon;
+  final bool mirror;
   final Color color;
   final VoidCallback onTap;
   const _NavBtn(
-      {required this.icon, required this.color, required this.onTap});
+      {required this.mirror, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +485,11 @@ class _NavBtn extends StatelessWidget {
         height: 40,
         decoration:
             BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: Colors.white, size: 22),
+        padding: const EdgeInsets.all(8),
+        child: Transform.scale(
+          scaleX: mirror ? -1 : 1,
+          child: SvgPicture.string(_kPawSvg),
+        ),
       ),
     );
   }
