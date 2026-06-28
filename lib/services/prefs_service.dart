@@ -38,6 +38,9 @@ class PrefsService {
   static double get defaultTaxRate => _p.getDouble('DefaultTaxRate') ?? 0.0;
   static set defaultTaxRate(double v) => _p.setDouble('DefaultTaxRate', v < 0 ? 0 : v);
 
+  static double get nightlyRate => _p.getDouble('NightlyRate') ?? 0.0;
+  static set nightlyRate(double v) => _p.setDouble('NightlyRate', v < 0 ? 0 : v);
+
   // Network role
   static String get networkRole => _p.getString('NetworkRole') ?? 'client';
   static set networkRole(String v) => _p.setString('NetworkRole', v);

@@ -22,6 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _taxCtrl = TextEditingController();
+  final _nightlyRateCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -32,6 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _emailCtrl.text = PrefsService.businessEmail.toLowerCase();
     final rate = PrefsService.defaultTaxRate;
     _taxCtrl.text = rate > 0 ? rate.toString() : '';
+    final nightly = PrefsService.nightlyRate;
+    _nightlyRateCtrl.text = nightly > 0 ? nightly.toStringAsFixed(2) : '';
   }
 
   @override
@@ -42,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _taxCtrl.dispose();
+    _nightlyRateCtrl.dispose();
     super.dispose();
   }
 
@@ -52,6 +56,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     PrefsService.businessEmail = _emailCtrl.text.trim();
     final rate = double.tryParse(_taxCtrl.text);
     if (rate != null) PrefsService.defaultTaxRate = rate;
+    final nightly = double.tryParse(_nightlyRateCtrl.text);
+    if (nightly != null) PrefsService.nightlyRate = nightly;
   }
 
   @override
@@ -117,45 +123,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _SectionLabel('BILLING', theme),
             _Card(
               theme: theme,
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Default Tax Rate',
-                            style: TextStyle(
-                                color: theme.textColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold)),
-                        Text('Applied automatically to new invoices',
-                            style: TextStyle(
-                                color: theme.subtextColor, fontSize: 12)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Nightly Rate',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            Text('Pre-filled on auto-generated invoices',
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Text('\$',
+                          style: TextStyle(
+                              color: theme.primaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          controller: _nightlyRateCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.right,
+                          decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '0.00',
+                              contentPadding: EdgeInsets.zero),
+                          style: TextStyle(
+                              color: theme.primaryColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                          onChanged: (_) => _save(),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(
-                    width: 72,
-                    child: TextField(
-                      controller: _taxCtrl,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '0',
-                          contentPadding: EdgeInsets.zero),
-                      style: TextStyle(
-                          color: theme.primaryColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                      onChanged: (_) => _save(),
-                    ),
+                  Divider(color: theme.borderColor, height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Default Tax Rate',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            Text('Applied automatically to new invoices',
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: 72,
+                        child: TextField(
+                          controller: _taxCtrl,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '0',
+                              contentPadding: EdgeInsets.zero),
+                          style: TextStyle(
+                              color: theme.primaryColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                          onChanged: (_) => _save(),
+                        ),
+                      ),
+                      Text('%',
+                          style: TextStyle(
+                              color: theme.primaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  Text('%',
-                      style: TextStyle(
-                          color: theme.primaryColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

@@ -5,6 +5,7 @@ import '../models/booking.dart';
 import '../models/invoice.dart';
 import '../models/service.dart';
 import '../services/database_service.dart';
+import '../services/prefs_service.dart';
 
 class AppProvider extends ChangeNotifier {
   final DatabaseService db;
@@ -122,6 +123,9 @@ class AppProvider extends ChangeNotifier {
     final invoiceNumber = await db.getNextInvoiceNumber();
     final customer =
         customers.where((c) => c.id == booking.customerId).firstOrNull;
+    final nights =
+        (booking.checkOutDate.difference(booking.checkInDate).inDays).clamp(1, 999);
+    final nightlyRate = PrefsService.nightlyRate;
     final inv = Invoice(
       customerId: booking.customerId,
       customerName: customer?.name ?? booking.customerName,
@@ -131,7 +135,17 @@ class AppProvider extends ChangeNotifier {
       dueDate: DateTime.now().add(const Duration(days: 30)),
       status: 'Draft',
     );
-    await saveInvoice(inv, []);
+    final lineItems = nightlyRate > 0
+        ? [
+            InvoiceLineItem(
+              invoiceId: inv.id,
+              description: 'Boarding ($nights night${nights == 1 ? '' : 's'})',
+              quantity: nights.toDouble(),
+              unitPrice: nightlyRate,
+            )
+          ]
+        : <InvoiceLineItem>[];
+    await saveInvoice(inv, lineItems);
   }
 
   // ── Services ───────────────────────────────────────────────────────────────
