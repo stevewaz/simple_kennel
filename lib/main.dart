@@ -6,6 +6,7 @@ import 'services/runs_service.dart';
 import 'services/prefs_service.dart';
 import 'services/pocketbase_service.dart';
 import 'providers/app_provider.dart';
+import 'screens/splash_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'screens/customers_screen.dart';
@@ -39,10 +40,10 @@ class SimpleKennelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
     return MaterialApp(
-      title: 'SimpleKennel',
+      title: 'PawBook',
       debugShowCheckedModeBanner: false,
       theme: theme.buildTheme(),
-      home: const MainShell(),
+      home: SplashScreen(nextScreen: (_) => const MainShell()),
     );
   }
 }

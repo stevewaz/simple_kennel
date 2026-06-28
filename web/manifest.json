@@ -1,11 +1,11 @@
 {
-    "name": "simple_kennel",
-    "short_name": "simple_kennel",
+    "name": "PawBook",
+    "short_name": "PawBook",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#7B5EA7",
+    "theme_color": "#7B5EA7",
+    "description": "Kennel management made simple",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

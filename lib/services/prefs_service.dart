@@ -26,7 +26,7 @@ class PrefsService {
   static set businessEmail(String v) => _p.setString('BrandEmail', v);
 
   static String get displayName =>
-      businessName.isEmpty ? 'SimpleKennel' : businessName;
+      businessName.isEmpty ? 'PawBook' : businessName;
 
   // Theme
   static int get themeIndex => _p.getInt('ThemeIndex') ?? 0;

@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Icon(Icons.pets, color: theme.primaryColor, size: 52),
                 const SizedBox(height: 12),
                 Text(
-                  'SimpleKennel',
+                  'PawBook',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: theme.primaryColor,

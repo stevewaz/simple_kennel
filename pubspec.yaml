@@ -1,5 +1,5 @@
 name: simple_kennel
-description: "SimpleKennel - Kennel management app"
+description: "PawBook - Kennel management app"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -22,6 +22,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.0
+
+flutter_native_splash:
+  color: "#7B5EA7"
+  color_dark: "#4A3570"
+  android: true
+  ios: true
+  web: true
 
 flutter:
   uses-material-design: true
