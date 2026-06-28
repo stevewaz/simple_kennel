@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../models/booking.dart';
-import '../models/customer.dart';
-import '../widgets/dialogs/add_invoice_dialog.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -147,13 +145,8 @@ class DashboardScreen extends StatelessWidget {
                                         theme: theme,
                                         onCheckIn: a.type == 'Check-in' &&
                                                 a.booking.status != 'CheckedIn'
-                                            ? () => app.saveBooking(
-                                                a.booking.copyWith(
-                                                    status: 'CheckedIn'))
-                                            : null,
-                                        onInvoice: a.type == 'Check-in'
-                                            ? () => _openInvoice(
-                                                context, a.booking, app, theme)
+                                            ? () => app.checkInWithDraftInvoice(
+                                                a.booking)
                                             : null,
                                       ))
                                   .toList(),
@@ -179,29 +172,6 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _openInvoice(BuildContext context, Booking booking, AppProvider app,
-      ThemeService theme) {
-    final customer = app.customers
-        .where((c) => c.id == booking.customerId)
-        .cast<Customer?>()
-        .firstOrNull;
-    showDialog(
-      context: context,
-      builder: (_) => AddInvoiceDialog(
-        initialCustomer: customer,
-        initialBooking: booking,
-        customers: app.customers,
-        bookings: app.bookings,
-        services: app.services,
-        getNextInvoiceNumber: app.getNextInvoiceNumber,
-        hasInvoiceForBooking: app.hasInvoiceForBooking,
-        defaultTaxRate: 0,
-        onSave: (inv, items) => app.saveInvoice(inv, items),
-        theme: theme,
       ),
     );
   }
@@ -324,13 +294,11 @@ class _ActivityRow extends StatelessWidget {
   final _Activity a;
   final ThemeService theme;
   final VoidCallback? onCheckIn;
-  final VoidCallback? onInvoice;
 
   const _ActivityRow({
     required this.a,
     required this.theme,
     this.onCheckIn,
-    this.onInvoice,
   });
 
   @override
@@ -343,9 +311,8 @@ class _ActivityRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: isCheckedIn
-                ? const Color(0xFF4CAF50)
-                : theme.primaryColor,
+            backgroundColor:
+                isCheckedIn ? const Color(0xFF4CAF50) : theme.primaryColor,
             child: Text(a.initials,
                 style: const TextStyle(
                     color: Colors.white,
@@ -370,7 +337,7 @@ class _ActivityRow extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // AM/PM pill for check-ins
+              // AM/PM pill
               if (a.checkInTime != null) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -383,73 +350,63 @@ class _ActivityRow extends StatelessWidget {
                   child: Text(a.checkInTime!,
                       style: const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
               ],
-              // Type badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isCheckedIn
-                      ? const Color(0xFF4CAF50)
-                      : a.badgeColor,
-                  borderRadius: BorderRadius.circular(4),
+              // Check-in button / checked-in badge
+              if (a.type == 'Check-in')
+                isCheckedIn
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, size: 12, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('Checked In',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: onCheckIn,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6)),
+                          elevation: 0,
+                        ),
+                        child: const Text('Check-In'),
+                      )
+              else
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: a.badgeColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(a.type,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
-                child: Text(
-                  isCheckedIn && a.type == 'Check-in' ? 'Checked In' : a.type,
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
-                ),
-              ),
-              // Check-in action button
-              if (a.type == 'Check-in') ...[
-                const SizedBox(width: 4),
-                _ActionIcon(
-                  icon: isCheckedIn ? Icons.check_circle : Icons.login,
-                  color: isCheckedIn
-                      ? const Color(0xFF4CAF50)
-                      : theme.primaryColor,
-                  tooltip: isCheckedIn ? 'Checked in' : 'Mark checked in',
-                  onTap: onCheckIn,
-                ),
-                const SizedBox(width: 2),
-                _ActionIcon(
-                  icon: Icons.receipt_long,
-                  color: theme.subtextColor,
-                  tooltip: 'Create draft invoice',
-                  onTap: onInvoice,
-                ),
-              ],
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback? onTap;
-
-  const _ActionIcon({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(icon, size: 18, color: onTap == null ? color.withValues(alpha: 0.4) : color),
-        ),
       ),
     );
   }

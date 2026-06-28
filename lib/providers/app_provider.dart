@@ -115,6 +115,25 @@ class AppProvider extends ChangeNotifier {
   Future<bool> hasInvoiceForBooking(String bookingId) =>
       db.hasInvoiceForBooking(bookingId);
 
+  Future<void> checkInWithDraftInvoice(Booking booking) async {
+    await saveBooking(booking.copyWith(status: 'CheckedIn'));
+    final alreadyHas = await db.hasInvoiceForBooking(booking.id);
+    if (alreadyHas) return;
+    final invoiceNumber = await db.getNextInvoiceNumber();
+    final customer =
+        customers.where((c) => c.id == booking.customerId).firstOrNull;
+    final inv = Invoice(
+      customerId: booking.customerId,
+      customerName: customer?.name ?? booking.customerName,
+      invoiceNumber: invoiceNumber,
+      bookingId: booking.id,
+      issueDate: DateTime.now(),
+      dueDate: DateTime.now().add(const Duration(days: 30)),
+      status: 'Draft',
+    );
+    await saveInvoice(inv, []);
+  }
+
   // ── Services ───────────────────────────────────────────────────────────────
 
   Future<void> saveService(Service s) async {
