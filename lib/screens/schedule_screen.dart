@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -486,8 +487,8 @@ class _NavBtn extends StatelessWidget {
         decoration:
             BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.all(8),
-        child: Transform.scale(
-          scaleX: mirror ? -1 : 1,
+        child: Transform.rotate(
+          angle: mirror ? -math.pi / 2 : math.pi / 2,
           child: SvgPicture.string(_kPawSvg),
         ),
       ),
