@@ -4,7 +4,9 @@ import '../services/theme_service.dart';
 import '../services/prefs_service.dart';
 import '../providers/app_provider.dart';
 import '../models/service.dart';
+import 'package:flutter/services.dart';
 import '../services/runs_service.dart';
+import '../utils/input_formatters.dart';
 import '../widgets/dialogs/add_service_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -26,8 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _nameCtrl.text = PrefsService.businessName;
     _addrCtrl.text = PrefsService.businessAddress;
-    _phoneCtrl.text = PrefsService.businessPhone;
-    _emailCtrl.text = PrefsService.businessEmail;
+    _phoneCtrl.text = formatUSPhone(PrefsService.businessPhone);
+    _emailCtrl.text = PrefsService.businessEmail.toLowerCase();
     final rate = PrefsService.defaultTaxRate;
     _taxCtrl.text = rate > 0 ? rate.toString() : '';
   }
@@ -104,9 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Divider(color: theme.borderColor, height: 24),
                   _LabeledField(label: 'Address', ctrl: _addrCtrl, hint: '123 Main St', keyboard: TextInputType.streetAddress, theme: theme, onChanged: (_) => _save()),
                   Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Phone', ctrl: _phoneCtrl, hint: '(555) 123-4567', keyboard: TextInputType.phone, theme: theme, onChanged: (_) => _save()),
+                  _LabeledField(label: 'Phone', ctrl: _phoneCtrl, hint: '(555) 123-4567', keyboard: TextInputType.phone, theme: theme, onChanged: (_) => _save(), inputFormatters: [USPhoneInputFormatter()]),
                   Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Email', ctrl: _emailCtrl, hint: 'hello@yourbusiness.com', keyboard: TextInputType.emailAddress, theme: theme, onChanged: (_) => _save()),
+                  _LabeledField(label: 'Email', ctrl: _emailCtrl, hint: 'hello@yourbusiness.com', keyboard: TextInputType.emailAddress, theme: theme, onChanged: (_) => _save(), inputFormatters: [LowercaseEmailFormatter()]),
                 ],
               ),
             ),
@@ -636,6 +638,7 @@ class _LabeledField extends StatelessWidget {
   final TextInputType keyboard;
   final ThemeService theme;
   final ValueChanged<String> onChanged;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _LabeledField({
     required this.label,
@@ -644,6 +647,7 @@ class _LabeledField extends StatelessWidget {
     required this.keyboard,
     required this.theme,
     required this.onChanged,
+    this.inputFormatters,
   });
 
   @override
@@ -660,6 +664,7 @@ class _LabeledField extends StatelessWidget {
           child: TextField(
             controller: ctrl,
             keyboardType: keyboard,
+            inputFormatters: inputFormatters,
             decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: TextStyle(color: theme.subtextColor),

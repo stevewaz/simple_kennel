@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/customer.dart';
 import '../../models/pet.dart';
 import '../../services/theme_service.dart';
+import '../../utils/input_formatters.dart';
 
 class AddCustomerDialog extends StatefulWidget {
   final Customer? existing;
@@ -42,8 +44,8 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     super.initState();
     if (widget.existing != null) {
       _nameCtrl.text = widget.existing!.name;
-      _emailCtrl.text = widget.existing!.email;
-      _phoneCtrl.text = widget.existing!.phoneNumber;
+      _emailCtrl.text = widget.existing!.email.toLowerCase();
+      _phoneCtrl.text = formatUSPhone(widget.existing!.phoneNumber);
       _addrCtrl.text = widget.existing!.address;
     }
     _pets = List.from(widget.initialPets);
@@ -139,13 +141,15 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                   label: 'Email',
                   ctrl: _emailCtrl,
                   theme: theme,
-                  keyboard: TextInputType.emailAddress),
+                  keyboard: TextInputType.emailAddress,
+                  inputFormatters: [LowercaseEmailFormatter()]),
               const SizedBox(height: 10),
               _Field(
                   label: 'Phone',
                   ctrl: _phoneCtrl,
                   theme: theme,
-                  keyboard: TextInputType.phone),
+                  keyboard: TextInputType.phone,
+                  inputFormatters: [USPhoneInputFormatter()]),
               const SizedBox(height: 10),
               _Field(
                   label: 'Address',
@@ -344,12 +348,14 @@ class _Field extends StatelessWidget {
   final TextEditingController ctrl;
   final ThemeService theme;
   final TextInputType keyboard;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _Field({
     required this.label,
     required this.ctrl,
     required this.theme,
     this.keyboard = TextInputType.text,
+    this.inputFormatters,
   });
 
   @override
@@ -357,6 +363,7 @@ class _Field extends StatelessWidget {
     return TextField(
       controller: ctrl,
       keyboardType: keyboard,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: theme.subtextColor)),
