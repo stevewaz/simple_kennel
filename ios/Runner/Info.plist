@@ -68,5 +68,12 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>PawBook needs local network access to discover WiFi printers.</string>
+		<key>NSBonjourServices</key>
+		<array>
+			<string>_ipp._tcp</string>
+			<string>_ipps._tcp</string>
+		</array>
 	</dict>
 </plist>
