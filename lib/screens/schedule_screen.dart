@@ -444,6 +444,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 for (final p in toDelete) {
                   await app.deletePet(p);
                 }
+                // Evict cache so the grid re-fetches updated pet names
+                _fetchedIds.remove(customerId);
+                _petsCache.remove(customerId);
+                await _loadPetsForMonth(app);
               },
               theme: theme,
             ),
