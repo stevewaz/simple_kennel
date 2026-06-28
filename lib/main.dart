@@ -28,13 +28,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RunsService()),
         ChangeNotifierProvider(create: (_) => AppProvider(db)),
       ],
-      child: const SimpleKennelApp(),
+      child: const PawBookApp(),
     ),
   );
 }
 
-class SimpleKennelApp extends StatelessWidget {
-  const SimpleKennelApp({super.key});
+class PawBookApp extends StatelessWidget {
+  const PawBookApp({super.key});
 
   @override
   Widget build(BuildContext context) {
