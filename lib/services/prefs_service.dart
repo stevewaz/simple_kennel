@@ -76,4 +76,21 @@ class PrefsService {
       _p.setString('pet_photos_$petId', jsonEncode(paths));
 
   static void removePetPhotos(String petId) => _p.remove('pet_photos_$petId');
+
+  // Tracks which local paths have already been synced to PocketBase
+  static Set<String> getUploadedPetPhotos(String petId) {
+    final raw = _p.getString('pet_photos_synced_$petId');
+    if (raw == null) return {};
+    try {
+      return Set<String>.from((jsonDecode(raw) as List).cast<String>());
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static void markPetPhotosUploaded(String petId, List<String> paths) =>
+      _p.setString('pet_photos_synced_$petId', jsonEncode(paths));
+
+  static void removeUploadedPetPhotos(String petId) =>
+      _p.remove('pet_photos_synced_$petId');
 }

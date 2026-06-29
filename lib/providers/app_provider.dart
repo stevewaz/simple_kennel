@@ -72,7 +72,20 @@ class AppProvider extends ChangeNotifier {
 
   Future<List<Pet>> getPets(String customerId) => db.getPets(customerId);
 
-  Future<void> savePet(Pet p) async => db.savePet(p);
+  Future<void> savePet(Pet p) async {
+    await db.savePet(p);
+    final allPaths = PrefsService.getPetPhotos(p.id);
+    if (allPaths.isEmpty) return;
+    final uploaded = PrefsService.getUploadedPetPhotos(p.id);
+    final newPaths = allPaths.where((path) => !uploaded.contains(path)).toList();
+    if (newPaths.isEmpty) return;
+    try {
+      await db.uploadPetFiles(p.id, newPaths);
+      PrefsService.markPetPhotosUploaded(p.id, allPaths);
+    } catch (_) {
+      // Offline — will sync next time the pet is saved
+    }
+  }
 
   Future<void> deletePet(Pet p) async => db.deletePet(p);
 

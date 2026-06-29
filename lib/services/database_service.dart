@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:pocketbase_drift/pocketbase_drift.dart' hide Service;
 import '../models/customer.dart';
 import '../models/pet.dart';
@@ -96,6 +98,22 @@ class DatabaseService {
 
   Future<void> deletePet(Pet p) =>
       _client.collection('pets').delete(p.id);
+
+  /// Uploads [localPaths] as new files on the `paperwork` field of a pet record.
+  /// Only call with paths that haven't been uploaded yet — files are appended.
+  Future<void> uploadPetFiles(String petId, List<String> localPaths) async {
+    final files = <http.MultipartFile>[];
+    for (final path in localPaths) {
+      final f = File(path);
+      if (!await f.exists()) continue;
+      final bytes = await f.readAsBytes();
+      final filename = path.split('/').last;
+      files.add(http.MultipartFile.fromBytes('paperwork', bytes,
+          filename: filename));
+    }
+    if (files.isEmpty) return;
+    await _client.collection('pets').update(petId, files: files);
+  }
 
   Future<void> deletePetsForCustomer(String customerId) async {
     final pets = await getPets(customerId);

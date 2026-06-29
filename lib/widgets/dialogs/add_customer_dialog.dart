@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../data/breeds.dart';
 import '../../models/customer.dart';
 import '../../models/pet.dart';
 import '../../services/theme_service.dart';
@@ -45,17 +48,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
   late List<Pet> _pets;
   final List<Pet> _deletedPets = [];
 
-  // Pet form state
-  bool _showPetForm = false;
-  int? _editingIndex;
-  String _formPetId = '';
-  final _petNameCtrl = TextEditingController();
-  final _petBreedCtrl = TextEditingController();
-  final _petAgeCtrl = TextEditingController();
-  final _petNotesCtrl = TextEditingController();
-  String _petSpecies = 'Dog';
-  List<String> _formPhotos = [];
-
   @override
   void initState() {
     super.initState();
@@ -74,84 +66,29 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _addrCtrl.dispose();
-    _petNameCtrl.dispose();
-    _petBreedCtrl.dispose();
-    _petAgeCtrl.dispose();
-    _petNotesCtrl.dispose();
     super.dispose();
   }
 
-  void _openAddPet() {
-    setState(() {
-      _showPetForm = true;
-      _editingIndex = null;
-      _formPetId = _genId();
-      _petNameCtrl.clear();
-      _petBreedCtrl.clear();
-      _petAgeCtrl.clear();
-      _petNotesCtrl.clear();
-      _petSpecies = 'Dog';
-      _formPhotos = [];
-    });
-  }
-
-  void _openEditPet(int index) {
-    final p = _pets[index];
-    setState(() {
-      _showPetForm = true;
-      _editingIndex = index;
-      _formPetId = p.id;
-      _petNameCtrl.text = p.name;
-      _petBreedCtrl.text = p.breed;
-      _petAgeCtrl.text = p.age > 0 ? p.age.toString() : '';
-      _petNotesCtrl.text = p.notes;
-      _petSpecies = p.species;
-      _formPhotos = List.from(PrefsService.getPetPhotos(p.id));
-    });
-  }
-
-  void _closePetForm() {
-    setState(() {
-      _showPetForm = false;
-      _editingIndex = null;
-      _formPetId = '';
-      _formPhotos = [];
-      _petNameCtrl.clear();
-      _petBreedCtrl.clear();
-      _petAgeCtrl.clear();
-      _petNotesCtrl.clear();
-      _petSpecies = 'Dog';
-    });
-  }
-
-  void _savePetForm() {
-    if (_petNameCtrl.text.trim().isEmpty) return;
-    PrefsService.setPetPhotos(_formPetId, _formPhotos);
-    final pet = Pet(
-      id: _formPetId,
-      customerId: widget.existing?.id ?? '',
-      name: _petNameCtrl.text.trim(),
-      species: _petSpecies,
-      breed: _petBreedCtrl.text.trim(),
-      age: int.tryParse(_petAgeCtrl.text.trim()) ?? 0,
-      notes: _petNotesCtrl.text.trim(),
+  Future<void> _showAddPetDialog() async {
+    final pet = await showDialog<Pet>(
+      context: context,
+      builder: (_) => _PetFormDialog(theme: widget.theme),
     );
-    setState(() {
-      if (_editingIndex != null) {
-        _pets[_editingIndex!] = pet;
-      } else {
-        _pets.add(pet);
-      }
-      _showPetForm = false;
-      _editingIndex = null;
-      _formPetId = '';
-      _formPhotos = [];
-      _petNameCtrl.clear();
-      _petBreedCtrl.clear();
-      _petAgeCtrl.clear();
-      _petNotesCtrl.clear();
-      _petSpecies = 'Dog';
-    });
+    if (pet != null) setState(() => _pets.add(pet));
+  }
+
+  Future<void> _showEditPetDialog(int index) async {
+    final existing = _pets[index];
+    final photos = PrefsService.getPetPhotos(existing.id);
+    final pet = await showDialog<Pet>(
+      context: context,
+      builder: (_) => _PetFormDialog(
+        existing: existing,
+        existingPhotos: photos,
+        theme: widget.theme,
+      ),
+    );
+    if (pet != null) setState(() => _pets[index] = pet);
   }
 
   void _removePet(Pet p) {
@@ -166,26 +103,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       try { File(path).delete(); } catch (_) {}
     }
     PrefsService.removePetPhotos(p.id);
-  }
-
-  Future<void> _pickPhoto() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 80);
-    if (image == null) return;
-    final docsDir = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docsDir.path}/pet_photos/$_formPetId');
-    await dir.create(recursive: true);
-    final dest =
-        '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-    await File(image.path).copy(dest);
-    setState(() => _formPhotos.add(dest));
-  }
-
-  void _removePhoto(int index) {
-    final path = _formPhotos[index];
-    try { File(path).delete(); } catch (_) {}
-    setState(() => _formPhotos.removeAt(index));
+    PrefsService.removeUploadedPetPhotos(p.id);
   }
 
   Future<void> _save() async {
@@ -262,205 +180,35 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                           fontWeight: FontWeight.w600,
                           fontSize: 14)),
                   const Spacer(),
-                  if (!_showPetForm)
-                    TextButton.icon(
-                      onPressed: _openAddPet,
-                      icon: Icon(Icons.add, size: 16, color: theme.primaryColor),
-                      label: Text('Add Pet',
-                          style: TextStyle(
-                              color: theme.primaryColor, fontSize: 13)),
-                      style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                    ),
+                  TextButton.icon(
+                    onPressed: _showAddPetDialog,
+                    icon: Icon(Icons.add, size: 16, color: theme.primaryColor),
+                    label: Text('Add Pet',
+                        style: TextStyle(
+                            color: theme.primaryColor, fontSize: 13)),
+                    style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  ),
                 ],
               ),
 
-              if (_pets.isEmpty && !_showPetForm)
+              if (_pets.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text('No pets added yet',
-                      style: TextStyle(
-                          color: theme.subtextColor, fontSize: 13)),
+                      style:
+                          TextStyle(color: theme.subtextColor, fontSize: 13)),
                 ),
 
               ..._pets.asMap().entries.map((e) => _PetRow(
                     pet: e.value,
                     photoCount: PrefsService.getPetPhotos(e.value.id).length,
                     theme: theme,
-                    onEdit: () => _openEditPet(e.key),
+                    onEdit: () => _showEditPetDialog(e.key),
                     onRemove: () => _removePet(e.value),
                   )),
-
-              // Pet form (add or edit)
-              if (_showPetForm) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.scaffoldBgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.primaryColor.withValues(alpha: 0.4)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _editingIndex != null ? 'Edit Pet' : 'New Pet',
-                        style: TextStyle(
-                            color: theme.textColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13),
-                      ),
-                      const SizedBox(height: 8),
-                      _Field(label: 'Pet Name *', ctrl: _petNameCtrl, theme: theme),
-                      const SizedBox(height: 8),
-                      InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: 'Species',
-                          labelStyle: TextStyle(color: theme.subtextColor),
-                        ),
-                        child: DropdownButton<String>(
-                          value: _petSpecies,
-                          dropdownColor: theme.cardBgColor,
-                          underline: const SizedBox.shrink(),
-                          isExpanded: true,
-                          style: TextStyle(color: theme.textColor),
-                          items: ['Dog', 'Cat', 'Other']
-                              .map((s) =>
-                                  DropdownMenuItem(value: s, child: Text(s)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _petSpecies = v ?? 'Dog'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _Field(label: 'Breed', ctrl: _petBreedCtrl, theme: theme),
-                      const SizedBox(height: 8),
-                      _Field(
-                          label: 'Age',
-                          ctrl: _petAgeCtrl,
-                          theme: theme,
-                          keyboard: TextInputType.number),
-                      const SizedBox(height: 8),
-                      _Field(label: 'Notes', ctrl: _petNotesCtrl, theme: theme),
-
-                      // Photos (native only)
-                      if (!kIsWeb) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.photo_library,
-                                size: 14, color: theme.subtextColor),
-                            const SizedBox(width: 6),
-                            Text('Paperwork Photos',
-                                style: TextStyle(
-                                    color: theme.subtextColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500)),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: _pickPhoto,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: theme.primaryColor,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.add_a_photo,
-                                        size: 12, color: Colors.white),
-                                    const SizedBox(width: 4),
-                                    const Text('Add',
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 11)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_formPhotos.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 80,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _formPhotos.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(width: 6),
-                              itemBuilder: (_, i) => Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.file(
-                                      File(_formPhotos[i]),
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => Container(
-                                        width: 80,
-                                        height: 80,
-                                        color: theme.borderColor,
-                                        child: Icon(Icons.broken_image,
-                                            color: theme.subtextColor),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 2,
-                                    right: 2,
-                                    child: GestureDetector(
-                                      onTap: () => _removePhoto(i),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        padding: const EdgeInsets.all(2),
-                                        child: const Icon(Icons.close,
-                                            size: 12, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: _closePetForm,
-                            child: Text('Cancel',
-                                style:
-                                    TextStyle(color: theme.subtextColor)),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.primaryColor,
-                                foregroundColor: Colors.white),
-                            onPressed: _savePetForm,
-                            child: Text(_editingIndex != null
-                                ? 'Save Changes'
-                                : 'Add Pet'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -482,6 +230,350 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 }
+
+// ─── Pet form dialog ──────────────────────────────────────────────────────────
+
+class _PetFormDialog extends StatefulWidget {
+  final Pet? existing;
+  final List<String> existingPhotos;
+  final ThemeService theme;
+
+  const _PetFormDialog({
+    this.existing,
+    this.existingPhotos = const [],
+    required this.theme,
+  });
+
+  @override
+  State<_PetFormDialog> createState() => _PetFormDialogState();
+}
+
+class _PetFormDialogState extends State<_PetFormDialog> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _breedCtrl;
+  late final TextEditingController _ageCtrl;
+  late final TextEditingController _notesCtrl;
+  final FocusNode _breedFocusNode = FocusNode();
+  late String _species;
+  late String _petId;
+  late List<String> _photos;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.existing;
+    _petId = p?.id ?? _genId();
+    _nameCtrl = TextEditingController(text: p?.name ?? '');
+    _breedCtrl = TextEditingController(text: p?.breed ?? '');
+    _ageCtrl = TextEditingController(
+        text: p != null && p.age > 0 ? p.age.toString() : '');
+    _notesCtrl = TextEditingController(text: p?.notes ?? '');
+    _species = p?.species ?? 'Dog';
+    _photos = List.from(widget.existingPhotos);
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _breedCtrl.dispose();
+    _ageCtrl.dispose();
+    _notesCtrl.dispose();
+    _breedFocusNode.dispose();
+    super.dispose();
+  }
+
+  static bool _isImage(String path) {
+    final ext = path.toLowerCase().split('.').last;
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext);
+  }
+
+  // Compresses an image file in-place (max 1500px, JPEG quality 75).
+  // Non-image files are left untouched.
+  static Future<void> _compressImage(String path) async {
+    try {
+      final bytes = await File(path).readAsBytes();
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) return;
+      const maxDim = 1500;
+      var output = decoded;
+      if (decoded.width > maxDim || decoded.height > maxDim) {
+        output = decoded.width >= decoded.height
+            ? img.copyResize(decoded, width: maxDim)
+            : img.copyResize(decoded, height: maxDim);
+      }
+      await File(path).writeAsBytes(img.encodeJpg(output, quality: 75));
+    } catch (_) {}
+  }
+
+  Future<void> _addAttachment() async {
+    if (Platform.isIOS || Platform.isAndroid) {
+      // Use context before any await to satisfy the async-gap lint rule
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (_) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Library'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (source == null || !mounted) return;
+      // imageQuality pre-compresses; _compressImage enforces max dimensions
+      final image = await ImagePicker()
+          .pickImage(source: source, imageQuality: 70);
+      if (image == null || !mounted) return;
+      final docsDir = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docsDir.path}/pet_photos/$_petId');
+      await dir.create(recursive: true);
+      final dest = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(image.path).copy(dest);
+      await _compressImage(dest);
+      if (mounted) setState(() => _photos.add(dest));
+    } else {
+      // Desktop: native file system picker — any file type
+      final result = await FilePicker.platform.pickFiles(allowMultiple: false);
+      if (result == null || result.files.isEmpty || !mounted) return;
+      final picked = result.files.first;
+      if (picked.path == null) return;
+      final docsDir = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docsDir.path}/pet_photos/$_petId');
+      await dir.create(recursive: true);
+      final ext = picked.extension != null ? '.${picked.extension}' : '';
+      final dest = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext';
+      await File(picked.path!).copy(dest);
+      if (_isImage(dest)) await _compressImage(dest);
+      if (mounted) setState(() => _photos.add(dest));
+    }
+  }
+
+  void _removePhoto(int i) {
+    final path = _photos[i];
+    try { File(path).delete(); } catch (_) {}
+    setState(() => _photos.removeAt(i));
+  }
+
+  void _save() {
+    if (_nameCtrl.text.trim().isEmpty) return;
+    PrefsService.setPetPhotos(_petId, _photos);
+    Navigator.pop(
+      context,
+      Pet(
+        id: _petId,
+        customerId: widget.existing?.customerId ?? '',
+        name: _nameCtrl.text.trim(),
+        species: _species,
+        breed: _breedCtrl.text.trim(),
+        age: int.tryParse(_ageCtrl.text.trim()) ?? 0,
+        notes: _notesCtrl.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final isEdit = widget.existing != null;
+
+    return AlertDialog(
+      backgroundColor: theme.cardBgColor,
+      title: Text(isEdit ? 'Edit Pet' : 'Add Pet',
+          style: TextStyle(color: theme.textColor)),
+      content: SizedBox(
+        width: 380,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Field(label: 'Pet Name *', ctrl: _nameCtrl, theme: theme),
+              const SizedBox(height: 8),
+              InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Species',
+                  labelStyle: TextStyle(color: theme.subtextColor),
+                ),
+                child: DropdownButton<String>(
+                  value: _species,
+                  dropdownColor: theme.cardBgColor,
+                  underline: const SizedBox.shrink(),
+                  isExpanded: true,
+                  style: TextStyle(color: theme.textColor),
+                  items: ['Dog', 'Cat', 'Other']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() {
+                    _species = v ?? 'Dog';
+                    _breedCtrl.clear();
+                  }),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_species == 'Dog' || _species == 'Cat')
+                _BreedAutocomplete(
+                  controller: _breedCtrl,
+                  focusNode: _breedFocusNode,
+                  breeds: _species == 'Dog' ? dogBreeds : catBreeds,
+                  theme: theme,
+                )
+              else
+                _Field(label: 'Breed', ctrl: _breedCtrl, theme: theme),
+              const SizedBox(height: 8),
+              _Field(
+                  label: 'Age',
+                  ctrl: _ageCtrl,
+                  theme: theme,
+                  keyboard: TextInputType.number),
+              const SizedBox(height: 8),
+              _Field(label: 'Notes', ctrl: _notesCtrl, theme: theme),
+
+              if (!kIsWeb) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(Icons.photo_library,
+                        size: 14, color: theme.subtextColor),
+                    const SizedBox(width: 6),
+                    Text('Paperwork',
+                        style: TextStyle(
+                            color: theme.subtextColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _addAttachment,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_a_photo,
+                                size: 12, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('Add',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_photos.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 80,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _photos.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 6),
+                      itemBuilder: (_, i) => Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: _isImage(_photos[i])
+                                ? Image.file(
+                                    File(_photos[i]),
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: theme.borderColor,
+                                      child: Icon(Icons.broken_image,
+                                          color: theme.subtextColor),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: theme.primaryColor
+                                        .withValues(alpha: 0.1),
+                                    padding: const EdgeInsets.all(6),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.insert_drive_file,
+                                            size: 28,
+                                            color: theme.primaryColor),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _photos[i]
+                                              .split('/')
+                                              .last
+                                              .split('.')
+                                              .last
+                                              .toUpperCase(),
+                                          style: TextStyle(
+                                              fontSize: 9,
+                                              color: theme.subtextColor),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => _removePhoto(i),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.all(2),
+                                child: const Icon(Icons.close,
+                                    size: 12, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                Text('Cancel', style: TextStyle(color: theme.subtextColor))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white),
+          onPressed: _save,
+          child: Text(isEdit ? 'Save Changes' : 'Add Pet'),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Shared widgets ───────────────────────────────────────────────────────────
 
 class _PetRow extends StatelessWidget {
   final Pet pet;
@@ -551,6 +643,72 @@ class _PetRow extends StatelessWidget {
             constraints: const BoxConstraints(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BreedAutocomplete extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final List<String> breeds;
+  final ThemeService theme;
+
+  const _BreedAutocomplete({
+    required this.controller,
+    required this.focusNode,
+    required this.breeds,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      textEditingController: controller,
+      focusNode: focusNode,
+      optionsBuilder: (value) {
+        if (value.text.isEmpty) return const Iterable.empty();
+        final query = value.text.toLowerCase();
+        return breeds.where((b) => b.toLowerCase().contains(query));
+      },
+      fieldViewBuilder: (_, ctrl, fn, onSubmit) => TextField(
+        controller: ctrl,
+        focusNode: fn,
+        onEditingComplete: onSubmit,
+        decoration: InputDecoration(
+          labelText: 'Breed',
+          labelStyle: TextStyle(color: theme.subtextColor),
+        ),
+        style: TextStyle(color: theme.textColor),
+      ),
+      optionsViewBuilder: (_, onSelected, options) => Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 4,
+          color: theme.cardBgColor,
+          borderRadius: BorderRadius.circular(8),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200, maxWidth: 340),
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: options.length,
+              itemBuilder: (_, i) {
+                final breed = options.elementAt(i);
+                return InkWell(
+                  onTap: () => onSelected(breed),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    child: Text(breed,
+                        style: TextStyle(
+                            color: theme.textColor, fontSize: 13)),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -21,6 +21,9 @@ dependencies:
   printing: ^5.13.2
   flutter_svg: ^2.0.10
   image_picker: ^1.1.2
+  file_picker: ^8.0.0
+  image: ^4.2.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
