@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -200,16 +201,18 @@ class _InvoiceTile extends StatelessWidget {
             ),
           ],
         ),
+        onTap: () => _onAction(context, 'edit'),
         trailing: PopupMenuButton<String>(
           color: theme.cardBgColor,
           itemBuilder: (_) => [
-            PopupMenuItem(
-                value: 'print',
-                child: Row(children: [
-                  const Icon(Icons.print, size: 16),
-                  const SizedBox(width: 8),
-                  Text('Print', style: TextStyle(color: theme.textColor)),
-                ])),
+            if (!kIsWeb)
+              PopupMenuItem(
+                  value: 'print',
+                  child: Row(children: [
+                    const Icon(Icons.print, size: 16),
+                    const SizedBox(width: 8),
+                    Text('Print', style: TextStyle(color: theme.textColor)),
+                  ])),
             PopupMenuItem(
                 value: 'edit',
                 child: Text('Edit', style: TextStyle(color: theme.textColor))),
@@ -235,8 +238,16 @@ class _InvoiceTile extends StatelessWidget {
 
   void _onAction(BuildContext context, String action) async {
     if (action == 'print') {
-      final items = await app.getLineItems(inv.id);
-      await printInvoice(inv, items);
+      try {
+        final items = await app.getLineItems(inv.id);
+        await printInvoice(inv, items);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Print failed: $e')),
+          );
+        }
+      }
     } else if (action == 'delete') {
       app.deleteInvoice(inv);
     } else if (action == 'edit') {

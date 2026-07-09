@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:pocketbase_drift/pocketbase_drift.dart' hide Service;
 import '../models/customer.dart';
@@ -102,6 +103,7 @@ class DatabaseService {
   /// Uploads [localPaths] as new files on the `paperwork` field of a pet record.
   /// Only call with paths that haven't been uploaded yet — files are appended.
   Future<void> uploadPetFiles(String petId, List<String> localPaths) async {
+    if (kIsWeb) return;
     final files = <http.MultipartFile>[];
     for (final path in localPaths) {
       final f = File(path);
