@@ -102,12 +102,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     // Build lookup: key -> booking
     final Map<String, Booking> cellMap = {};
+    // Build per-run booking list for span rendering
+    final Map<int, List<Booking>> runBookings = {};
     for (final b in app.bookings) {
       if (b.month == _month.month && b.year == _month.year) {
         for (int d = b.day; d <= b.endDay && d <= days; d++) {
           final key = Booking.generateKey(b.year, b.month, d, b.runIndex);
           cellMap[key] = b;
         }
+        runBookings.putIfAbsent(b.runIndex, () => []).add(b);
       }
     }
 
@@ -263,86 +266,104 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           height: runCount * kCellH,
                           child: Column(
                             children: List.generate(runCount, (runI) {
-                              return Row(
-                                children: List.generate(days, (dayI) {
-                                  final d = dayI + 1;
-                                  final key = Booking.generateKey(
-                                      _month.year, _month.month, d, runI);
-                                  final booking = cellMap[key];
-                                  final isCheckedIn =
-                                      booking?.status == 'CheckedIn';
-                                  final date =
-                                      DateTime(_month.year, _month.month, d);
-                                  final isToday = date.day == today.day &&
-                                      date.month == today.month &&
-                                      date.year == today.year;
+                              return Stack(
+                                clipBehavior: Clip.hardEdge,
+                                children: [
+                                  // Base cells — color + tap, no text
+                                  Row(
+                                    children: List.generate(days, (dayI) {
+                                      final d = dayI + 1;
+                                      final key = Booking.generateKey(
+                                          _month.year, _month.month, d, runI);
+                                      final booking = cellMap[key];
+                                      final isCheckedIn =
+                                          booking?.status == 'CheckedIn';
+                                      final date = DateTime(
+                                          _month.year, _month.month, d);
+                                      final isToday = date.day == today.day &&
+                                          date.month == today.month &&
+                                          date.year == today.year;
 
-                                  Color cellColor;
-                                  if (booking != null) {
-                                    cellColor = isCheckedIn
-                                        ? const Color(0xFF4CAF50)
-                                        : theme.primaryColor;
-                                  } else {
-                                    cellColor = isToday
-                                        ? theme.primaryColor
-                                            .withValues(alpha: 0.08)
-                                        : theme.cardBgColor;
-                                  }
+                                      final Color cellColor;
+                                      if (booking != null) {
+                                        cellColor = isCheckedIn
+                                            ? const Color(0xFF4CAF50)
+                                            : theme.primaryColor;
+                                      } else {
+                                        cellColor = isToday
+                                            ? theme.primaryColor
+                                                .withValues(alpha: 0.08)
+                                            : theme.cardBgColor;
+                                      }
 
-                                  return GestureDetector(
-                                    onTap: () => booking != null
-                                        ? _viewBooking(
-                                            context, booking, app, theme)
-                                        : _addBooking(context, d, runI,
-                                            runNames[runI], app, theme),
-                                    child: Container(
-                                      width: kCellW,
+                                      return GestureDetector(
+                                        onTap: () => booking != null
+                                            ? _viewBooking(
+                                                context, booking, app, theme)
+                                            : _addBooking(context, d, runI,
+                                                runNames[runI], app, theme),
+                                        child: Container(
+                                          width: kCellW,
+                                          height: kCellH,
+                                          decoration: BoxDecoration(
+                                            color: cellColor,
+                                            border: Border(
+                                              right: BorderSide(
+                                                  color: theme.gridLineColor,
+                                                  width: 0.5),
+                                              bottom: BorderSide(
+                                                  color: theme.gridLineColor,
+                                                  width: 0.5),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+
+                                  // Spanning labels — positioned over the base cells
+                                  ...(runBookings[runI] ?? []).map((b) {
+                                    final startDay = b.day.clamp(1, days);
+                                    final endDay = b.endDay.clamp(1, days);
+                                    return Positioned(
+                                      left: (startDay - 1) * kCellW,
+                                      top: 0,
+                                      width: (endDay - startDay + 1) * kCellW,
                                       height: kCellH,
-                                      decoration: BoxDecoration(
-                                        color: cellColor,
-                                        border: Border(
-                                          right: BorderSide(
-                                              color: theme.gridLineColor,
-                                              width: 0.5),
-                                          bottom: BorderSide(
-                                              color: theme.gridLineColor,
-                                              width: 0.5),
+                                      child: IgnorePointer(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 4),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                _cellLabel(b),
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                b.checkInTime,
+                                                style: TextStyle(
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.8),
+                                                    fontSize: 8),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                      child: booking != null && booking.day == d
-                                          ? Padding(
-                                              padding: const EdgeInsets.all(4),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    _cellLabel(booking),
-                                                    style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 9,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  Text(
-                                                    booking.checkInTime,
-                                                    style: TextStyle(
-                                                        color: Colors.white
-                                                            .withValues(
-                                                                alpha: 0.8),
-                                                        fontSize: 8),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                  );
-                                }),
+                                    );
+                                  }),
+                                ],
                               );
                             }),
                           ),
