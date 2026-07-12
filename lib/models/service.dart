@@ -15,13 +15,13 @@ class Service {
   bool isActive;
 
   Service({
-    String? id,
+    String id = '',
     this.name = '',
     this.description = '',
     this.defaultPrice = 0,
     this.unit = 'flat fee',
     this.isActive = true,
-  }) : id = id ?? _pbId();
+  }) : id = id.isEmpty ? _pbId() : id;
 
   String get priceDisplay => '\$${defaultPrice.toStringAsFixed(2)} / $unit';
   String get catalogDisplay => '$name  (\$${defaultPrice.toStringAsFixed(2)} / $unit)';

@@ -9,14 +9,13 @@ class Customer {
   DateTime createdAt;
 
   Customer({
-    String? id,
+    String id = '',
     this.name = '',
     this.email = '',
     this.phoneNumber = '',
     this.address = '',
-    DateTime? createdAt,
-  })  : id = id ?? _uuid(),
-        createdAt = createdAt ?? DateTime.now().toUtc();
+    required this.createdAt,
+  }) : id = id.isEmpty ? _uuid() : id;
 
   static String _uuid() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';

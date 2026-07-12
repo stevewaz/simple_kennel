@@ -4,7 +4,6 @@ import 'services/database_service.dart';
 import 'services/theme_service.dart';
 import 'services/runs_service.dart';
 import 'services/prefs_service.dart';
-import 'services/pocketbase_service.dart';
 import 'providers/app_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -12,14 +11,12 @@ import 'screens/schedule_screen.dart';
 import 'screens/customers_screen.dart';
 import 'screens/invoices_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PrefsService.init();
-  await PocketBaseService.init();
 
-  final db = DatabaseService(PocketBaseService.client);
+  final db = DatabaseService();
 
   runApp(
     MultiProvider(
@@ -28,19 +25,19 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RunsService()),
         ChangeNotifierProvider(create: (_) => AppProvider(db)),
       ],
-      child: const PawBookApp(),
+      child: const RunbookApp(),
     ),
   );
 }
 
-class PawBookApp extends StatelessWidget {
-  const PawBookApp({super.key});
+class RunbookApp extends StatelessWidget {
+  const RunbookApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
     return MaterialApp(
-      title: 'PawBook',
+      title: 'Runbook',
       debugShowCheckedModeBanner: false,
       theme: theme.buildTheme(),
       home: SplashScreen(nextScreen: (_) => const MainShell()),
@@ -56,7 +53,6 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  bool _loggedIn = false;
   int _tab = 0;
 
   static const _labels = [
@@ -87,26 +83,13 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    _loggedIn = PocketBaseService.isLoggedIn;
-    if (_loggedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<AppProvider>().loadAll();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppProvider>().loadAll();
+    });
   }
-
-  void _onLogin() {
-    setState(() => _loggedIn = true);
-    context.read<AppProvider>().loadAll();
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    if (!_loggedIn) {
-      return LoginScreen(onLogin: _onLogin);
-    }
-
     final theme = context.watch<ThemeService>();
 
     return Scaffold(

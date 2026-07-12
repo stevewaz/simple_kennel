@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            'PawBook',
+                            'Runbook',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 44,

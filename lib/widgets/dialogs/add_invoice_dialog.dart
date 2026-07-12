@@ -134,7 +134,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
     if (_customer == null) return;
     setState(() => _saving = true);
     final inv = Invoice(
-      id: widget.existing?.id,
+      id: widget.existing?.id ?? '',
       customerId: _customer!.id,
       customerName: _customer!.name,
       invoiceNumber: _invoiceNumber,
@@ -147,6 +147,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
       taxRate: _taxRate,
       taxAmount: _taxAmount,
       totalAmount: _total,
+      createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
     );
     final lineItems = _items
         .where((i) => i.desc.text.isNotEmpty)

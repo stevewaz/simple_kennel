@@ -1,17 +1,30 @@
-# simple_kennel
+# Runbook
 
-A new Flutter project.
+A kennel management app for small boarding businesses — tracks customers, pets, bookings, and invoices in one place.
 
-## Getting Started
+**Try the latest version:** https://stevewaz.github.io/simple_kennel/
 
-This project is a starting point for a Flutter application.
+## What it does
 
-A few resources to get you started if this is your first Flutter project:
+- **Dashboard** — today's occupancy, check-ins/check-outs (AM/PM), and upcoming bookings at a glance
+- **Schedule** — a run-by-day grid for booking pets in and out, with configurable runs (count + names)
+- **Customers** — customer records with multiple pets each, breed autocomplete, and paperwork photo attachments
+- **Invoices** — draft invoices auto-generated on check-in, line items pulled from a service catalog, PDF export/printing
+- **Settings** — business branding, nightly rate, tax rate, run configuration, light/dark theme
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Data & platforms
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Runs on iOS, Android, macOS, and Web. Everything is stored locally on-device — no account, no cloud, no login:
+
+- iOS / Android / macOS / desktop: [Isar](https://isar.dev/) embedded database
+- Web: a simple local JSON store (`localStorage`), intended for quick testing rather than daily production use
+
+## Development
+
+Standard Flutter project. After cloning:
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run
+```

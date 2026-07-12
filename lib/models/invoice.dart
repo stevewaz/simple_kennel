@@ -24,24 +24,21 @@ class Invoice {
   DateTime createdAt;
 
   Invoice({
-    String? id,
+    String id = '',
     this.customerId = '',
     this.customerName = '',
     this.invoiceNumber = '',
     this.bookingId = '',
-    DateTime? issueDate,
-    DateTime? dueDate,
+    required this.issueDate,
+    required this.dueDate,
     this.status = 'Draft',
     this.notes = '',
     this.subTotal = 0,
     this.taxRate = 0,
     this.taxAmount = 0,
     this.totalAmount = 0,
-    DateTime? createdAt,
-  })  : id = id ?? _pbId(),
-        issueDate = issueDate ?? DateTime.now(),
-        dueDate = dueDate ?? DateTime.now().add(const Duration(days: 30)),
-        createdAt = createdAt ?? DateTime.now().toUtc();
+    required this.createdAt,
+  }) : id = id.isEmpty ? _pbId() : id;
 
   Color get statusColor {
     switch (status) {
@@ -126,12 +123,12 @@ class InvoiceLineItem {
   double unitPrice;
 
   InvoiceLineItem({
-    String? id,
+    String id = '',
     required this.invoiceId,
     this.description = '',
     this.quantity = 1,
     this.unitPrice = 0,
-  }) : id = id ?? _pbId();
+  }) : id = id.isEmpty ? _pbId() : id;
 
   double get lineTotal => quantity * unitPrice;
 

@@ -1,6 +1,6 @@
 {
-    "name": "PawBook",
-    "short_name": "PawBook",
+    "name": "Runbook",
+    "short_name": "Runbook",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#7B5EA7",

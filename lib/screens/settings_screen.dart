@@ -407,7 +407,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('PawBook',
+                  Text('Runbook',
                       style: TextStyle(
                           color: theme.textColor,
                           fontSize: 15,

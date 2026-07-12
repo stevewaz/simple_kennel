@@ -21,7 +21,7 @@ class Booking {
   String checkInTime; // AM | PM
 
   Booking({
-    String? id,
+    String id = '',
     this.customerId = '',
     this.customerName = '',
     required this.day,
@@ -33,7 +33,7 @@ class Booking {
     this.notes = '',
     this.status = 'Scheduled',
     this.checkInTime = 'AM',
-  }) : id = id ?? _pbId();
+  }) : id = id.isEmpty ? _pbId() : id;
 
   DateTime get checkInDate => DateTime(year, month, day);
   DateTime get checkOutDate => DateTime(year, month, endDay);

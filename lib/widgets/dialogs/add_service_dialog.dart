@@ -57,7 +57,7 @@ class _AddServiceDialogState extends State<AddServiceDialog> {
     if (_nameCtrl.text.trim().isEmpty) return;
     setState(() => _saving = true);
     final service = Service(
-      id: widget.existing?.id,
+      id: widget.existing?.id ?? '',
       name: _nameCtrl.text.trim(),
       description: _descCtrl.text.trim(),
       defaultPrice: double.tryParse(_priceCtrl.text) ?? 0,

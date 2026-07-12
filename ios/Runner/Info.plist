@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>PawBook</string>
+		<string>Runbook</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>PawBook</string>
+		<string>Runbook</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -69,11 +69,11 @@
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PawBook needs access to your photo library to attach paperwork photos to pets.</string>
+		<string>Runbook needs access to your photo library to attach paperwork photos to pets.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>PawBook needs camera access to photograph pet paperwork.</string>
+		<string>Runbook needs camera access to photograph pet paperwork.</string>
 		<key>NSLocalNetworkUsageDescription</key>
-		<string>PawBook needs local network access to discover WiFi printers.</string>
+		<string>Runbook needs local network access to discover WiFi printers.</string>
 		<key>NSBonjourServices</key>
 		<array>
 			<string>_ipp._tcp</string>

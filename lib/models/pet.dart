@@ -17,16 +17,15 @@ class Pet {
   DateTime createdAt;
 
   Pet({
-    String? id,
+    String id = '',
     required this.customerId,
     this.name = '',
     this.species = 'Dog',
     this.breed = '',
     this.age = 0,
     this.notes = '',
-    DateTime? createdAt,
-  })  : id = id ?? _pbId(),
-        createdAt = createdAt ?? DateTime.now().toUtc();
+    required this.createdAt,
+  }) : id = id.isEmpty ? _pbId() : id;
 
   String get display =>
       breed.isEmpty ? '$name ($species)' : '$name ($breed)';

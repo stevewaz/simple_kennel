@@ -103,19 +103,18 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       try { File(path).delete(); } catch (_) {}
     }
     PrefsService.removePetPhotos(p.id);
-    PrefsService.removeUploadedPetPhotos(p.id);
   }
 
   Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty) return;
     setState(() => _saving = true);
     final customer = Customer(
-      id: widget.existing?.id,
+      id: widget.existing?.id ?? '',
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       phoneNumber: _phoneCtrl.text.trim(),
       address: _addrCtrl.text.trim(),
-      createdAt: widget.existing?.createdAt,
+      createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
     );
     final petsToSave = _pets.map((p) => p.customerId.isEmpty
         ? Pet(
@@ -126,6 +125,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
             breed: p.breed,
             age: p.age,
             notes: p.notes,
+            createdAt: p.createdAt,
           )
         : p).toList();
     await widget.onSave(customer, petsToSave, _deletedPets);
@@ -376,6 +376,7 @@ class _PetFormDialogState extends State<_PetFormDialog> {
         breed: _breedCtrl.text.trim(),
         age: int.tryParse(_ageCtrl.text.trim()) ?? 0,
         notes: _notesCtrl.text.trim(),
+        createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
       ),
     );
   }
