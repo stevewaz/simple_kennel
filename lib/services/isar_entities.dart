@@ -24,6 +24,9 @@ class CustomerEntity {
   String email;
   String phoneNumber;
   String address;
+  String city;
+  String state;
+  String zip;
   DateTime createdAt;
 
   CustomerEntity({
@@ -32,6 +35,9 @@ class CustomerEntity {
     required this.email,
     required this.phoneNumber,
     required this.address,
+    required this.city,
+    required this.state,
+    required this.zip,
     required this.createdAt,
   });
 
@@ -41,6 +47,9 @@ class CustomerEntity {
         email: c.email,
         phoneNumber: c.phoneNumber,
         address: c.address,
+        city: c.city,
+        state: c.state,
+        zip: c.zip,
         createdAt: c.createdAt,
       );
 
@@ -50,6 +59,9 @@ class CustomerEntity {
         email: email,
         phoneNumber: phoneNumber,
         address: address,
+        city: city,
+        state: state,
+        zip: zip,
         createdAt: createdAt,
       );
 }

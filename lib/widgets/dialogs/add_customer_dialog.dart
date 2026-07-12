@@ -43,6 +43,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addrCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _stateCtrl = TextEditingController();
+  final _zipCtrl = TextEditingController();
   bool _saving = false;
 
   late List<Pet> _pets;
@@ -56,6 +59,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       _emailCtrl.text = widget.existing!.email.toLowerCase();
       _phoneCtrl.text = formatUSPhone(widget.existing!.phoneNumber);
       _addrCtrl.text = widget.existing!.address;
+      _cityCtrl.text = widget.existing!.city;
+      _stateCtrl.text = widget.existing!.state;
+      _zipCtrl.text = widget.existing!.zip;
     }
     _pets = List.from(widget.initialPets);
   }
@@ -66,6 +72,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _addrCtrl.dispose();
+    _cityCtrl.dispose();
+    _stateCtrl.dispose();
+    _zipCtrl.dispose();
     super.dispose();
   }
 
@@ -114,6 +123,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       email: _emailCtrl.text.trim(),
       phoneNumber: _phoneCtrl.text.trim(),
       address: _addrCtrl.text.trim(),
+      city: _cityCtrl.text.trim(),
+      state: _stateCtrl.text.trim(),
+      zip: _zipCtrl.text.trim(),
       createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
     );
     final petsToSave = _pets.map((p) => p.customerId.isEmpty
@@ -169,6 +181,38 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                   ctrl: _addrCtrl,
                   theme: theme,
                   keyboard: TextInputType.streetAddress),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _Field(label: 'City', ctrl: _cityCtrl, theme: theme),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 1,
+                    child: _Field(
+                        label: 'State',
+                        ctrl: _stateCtrl,
+                        theme: theme,
+                        inputFormatters: [StateAbbrFormatter()]),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: _Field(
+                        label: 'Zip',
+                        ctrl: _zipCtrl,
+                        theme: theme,
+                        keyboard: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(5),
+                        ]),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
 
               // Pets header

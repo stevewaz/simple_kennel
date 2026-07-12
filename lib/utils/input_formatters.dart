@@ -38,6 +38,20 @@ class LowercaseEmailFormatter extends TextInputFormatter {
   }
 }
 
+/// Uppercases input and caps it at 2 characters, for US state abbreviations.
+class StateAbbrFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text.toUpperCase();
+    final limited = text.length > 2 ? text.substring(0, 2) : text;
+    return TextEditingValue(
+      text: limited,
+      selection: TextSelection.collapsed(offset: limited.length),
+    );
+  }
+}
+
 /// Normalises any phone string (digits only, with/without formatting)
 /// to (XXX) XXX-XXXX.  Returns the original if fewer than 10 digits.
 String formatUSPhone(String input) {
