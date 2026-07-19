@@ -2,7 +2,6 @@
 
 A kennel management app for small boarding businesses — tracks customers, pets, bookings, and invoices in one place.
 
-**Live app:** https://simplekennel-1ca46.web.app
 **Test build (auto-deploys on every push to `main`):** https://stevewaz.github.io/simple_kennel/
 
 ## What it does
