@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/customer.dart';
 import '../models/pet.dart';
@@ -5,12 +6,14 @@ import '../models/booking.dart';
 import '../models/invoice.dart';
 import '../models/service.dart';
 import '../services/database_service.dart';
-import '../services/prefs_service.dart';
+import '../services/tenant_settings_service.dart';
+import '../utils/run_sheet_pdf.dart';
 
 class AppProvider extends ChangeNotifier {
   final DatabaseService db;
+  final TenantSettingsService tenantSettings;
 
-  AppProvider(this.db);
+  AppProvider(this.db, this.tenantSettings);
 
   List<Customer> customers = [];
   List<Booking> bookings = [];
@@ -18,6 +21,7 @@ class AppProvider extends ChangeNotifier {
   List<Service> services = [];
 
   bool _loaded = false;
+  StreamSubscription<void>? _changesSub;
 
   Future<void> loadAll() async {
     if (_loaded) return;
@@ -30,6 +34,8 @@ class AppProvider extends ChangeNotifier {
     ]);
     _loaded = true;
     notifyListeners();
+    // Picks up edits made on another device without a manual refresh.
+    _changesSub ??= db.changes.listen((_) => reload());
   }
 
   void reset() {
@@ -38,7 +44,15 @@ class AppProvider extends ChangeNotifier {
     invoices = [];
     services = [];
     _loaded = false;
+    _changesSub?.cancel();
+    _changesSub = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _changesSub?.cancel();
+    super.dispose();
   }
 
   Future<void> reload() async {
@@ -120,14 +134,40 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> checkInWithDraftInvoice(Booking booking) async {
     await saveBooking(booking.copyWith(status: 'CheckedIn'));
-    final alreadyHas = await db.hasInvoiceForBooking(booking.id);
-    if (alreadyHas) return;
+    await ensureInvoiceForBooking(booking);
+  }
+
+  /// Looks up the invoice already linked to [bookingId], if any, from the
+  /// in-memory list (kept fresh by [_loadInvoices]).
+  Invoice? getInvoiceForBooking(String bookingId) =>
+      invoices.where((i) => i.bookingId == bookingId).firstOrNull;
+
+  /// Returns the existing draft invoice for [booking] or creates one
+  /// (same boarding line item logic as check-in) if none exists yet —
+  /// covers bookings checked in without going through [checkInWithDraftInvoice].
+  Future<Invoice> ensureInvoiceForBooking(Booking booking) async {
+    final existing = getInvoiceForBooking(booking.id);
+    if (existing != null) return existing;
+
     final invoiceNumber = await db.getNextInvoiceNumber();
     final customer =
         customers.where((c) => c.id == booking.customerId).firstOrNull;
     final nights =
         (booking.checkOutDate.difference(booking.checkInDate).inDays).clamp(1, 999);
-    final nightlyRate = PrefsService.nightlyRate;
+    final nightlyRate = tenantSettings.nightlyRate;
+    final lineItems = nightlyRate > 0
+        ? [
+            InvoiceLineItem(
+              invoiceId: '',
+              description: 'Boarding ($nights night${nights == 1 ? '' : 's'})',
+              quantity: nights.toDouble(),
+              unitPrice: nightlyRate,
+            )
+          ]
+        : <InvoiceLineItem>[];
+    final subTotal = lineItems.fold(0.0, (sum, i) => sum + i.lineTotal);
+    final taxRate = tenantSettings.defaultTaxRate;
+    final taxAmount = subTotal * taxRate;
     final inv = Invoice(
       customerId: booking.customerId,
       customerName: customer?.name ?? booking.customerName,
@@ -136,19 +176,70 @@ class AppProvider extends ChangeNotifier {
       issueDate: DateTime.now(),
       dueDate: DateTime.now().add(const Duration(days: 30)),
       status: 'Draft',
+      subTotal: subTotal,
+      taxRate: taxRate,
+      taxAmount: taxAmount,
+      totalAmount: subTotal + taxAmount,
       createdAt: DateTime.now().toUtc(),
     );
-    final lineItems = nightlyRate > 0
-        ? [
-            InvoiceLineItem(
-              invoiceId: inv.id,
-              description: 'Boarding ($nights night${nights == 1 ? '' : 's'})',
-              quantity: nights.toDouble(),
-              unitPrice: nightlyRate,
-            )
-          ]
-        : <InvoiceLineItem>[];
+    for (final item in lineItems) {
+      item.invoiceId = inv.id;
+    }
     await saveInvoice(inv, lineItems);
+    return inv;
+  }
+
+  /// Checks a booking out, optionally collecting payment on its invoice
+  /// in the same step. Pass [paymentMethod] to mark the invoice Paid;
+  /// omit it to just check out without recording payment.
+  Future<void> checkOutWithPayment(Booking booking,
+      {String? paymentMethod}) async {
+    final inv = await ensureInvoiceForBooking(booking);
+    if (paymentMethod != null) {
+      final items = await getLineItems(inv.id);
+      await saveInvoice(
+        inv.copyWith(
+          status: 'Paid',
+          paymentMethod: paymentMethod,
+          paidAt: DateTime.now(),
+        ),
+        items,
+      );
+    }
+    await saveBooking(booking.copyWith(status: 'Scheduled'));
+  }
+
+  /// Paid invoices with [Invoice.paidAt] within [start, end] (inclusive),
+  /// sorted oldest first — the basis for the payments report/CSV export.
+  List<Invoice> paidInvoicesBetween(DateTime start, DateTime end) {
+    final list = invoices.where((i) {
+      final paidAt = i.paidAt;
+      if (i.status != 'Paid' || paidAt == null) return false;
+      return !paidAt.isBefore(start) && !paidAt.isAfter(end);
+    }).toList();
+    list.sort((a, b) => a.paidAt!.compareTo(b.paidAt!));
+    return list;
+  }
+
+  /// True if [customerId] has no other booking besides [excludingBookingId] —
+  /// used to flag a run sheet "NEW CLIENT?" at check-in.
+  bool isNewClient(String customerId, String excludingBookingId) => bookings
+      .where((b) => b.customerId == customerId && b.id != excludingBookingId)
+      .isEmpty;
+
+  /// Gathers the customer + pets for [booking] and sends a printable
+  /// "Boarding Data Sheet" (run card) to the platform print dialog.
+  Future<void> printRunSheetForBooking(Booking booking) async {
+    final customer =
+        customers.where((c) => c.id == booking.customerId).firstOrNull;
+    final pets = await getPets(booking.customerId);
+    await printRunSheet(
+      booking,
+      customer,
+      pets,
+      isNewClient: isNewClient(booking.customerId, booking.id),
+      businessName: tenantSettings.displayName,
+    );
   }
 
   // ── Services ───────────────────────────────────────────────────────────────

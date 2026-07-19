@@ -3,26 +3,34 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/booking.dart';
+import '../../models/invoice.dart';
 import '../../models/pet.dart';
 import '../../services/prefs_service.dart';
 import '../../services/theme_service.dart';
+import 'payment_method_dialog.dart';
 
 class ViewBookingDialog extends StatefulWidget {
   final Booking booking;
   final Future<void> Function(Booking) onUpdate;
+  final Future<void> Function(Booking, {String? paymentMethod}) onCheckOut;
   final Future<void> Function() onDelete;
   final ThemeService theme;
   final Future<List<Pet>> Function(String customerId) getPets;
+  final Invoice? Function(String bookingId) getInvoiceForBooking;
   final Future<void> Function(String customerId)? onEditCustomer;
+  final Future<void> Function(Booking)? onPrintRunSheet;
 
   const ViewBookingDialog({
     super.key,
     required this.booking,
     required this.onUpdate,
+    required this.onCheckOut,
     required this.onDelete,
     required this.theme,
     required this.getPets,
+    required this.getInvoiceForBooking,
     this.onEditCustomer,
+    this.onPrintRunSheet,
   });
 
   @override
@@ -89,6 +97,14 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
               ],
             ),
           ),
+          if (!kIsWeb && widget.onPrintRunSheet != null)
+            IconButton(
+              icon: Icon(Icons.print, size: 18, color: theme.subtextColor),
+              tooltip: 'Print run sheet',
+              onPressed: () => widget.onPrintRunSheet!(b),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           if (widget.onEditCustomer != null && b.customerId.isNotEmpty)
             IconButton(
               icon: Icon(Icons.edit, size: 18, color: theme.subtextColor),
@@ -176,10 +192,28 @@ class _ViewBookingDialogState extends State<ViewBookingDialog> {
                   ? const Color(0xFFD4714D)
                   : const Color(0xFF4CAF50),
               foregroundColor: Colors.white),
-          onPressed: () {
-            widget.onUpdate(b.copyWith(
-                status: isCheckedIn ? 'Scheduled' : 'CheckedIn'));
-            Navigator.pop(context);
+          onPressed: () async {
+            if (!isCheckedIn) {
+              final checkedIn = b.copyWith(status: 'CheckedIn');
+              await widget.onUpdate(checkedIn);
+              if (!kIsWeb) await widget.onPrintRunSheet?.call(checkedIn);
+              if (context.mounted) Navigator.pop(context);
+              return;
+            }
+            final inv = widget.getInvoiceForBooking(b.id);
+            final result = await showDialog<PaymentMethodResult>(
+              context: context,
+              builder: (_) => PaymentMethodDialog(
+                theme: theme,
+                title: 'Check Out — ${b.customerName}',
+                amountLabel: inv?.amountDisplay,
+                confirmLabel: 'Mark Paid & Check Out',
+                skipLabel: 'Check Out Without Payment',
+              ),
+            );
+            if (result == null || !result.proceed) return;
+            await widget.onCheckOut(b, paymentMethod: result.method);
+            if (context.mounted) Navigator.pop(context);
           },
           child: Text(isCheckedIn ? 'Check Out' : 'Check In'),
         ),
@@ -206,6 +240,7 @@ class _PetCard extends StatelessWidget {
       if (pet.species.isNotEmpty) pet.species,
       if (pet.breed.isNotEmpty) pet.breed,
       if (pet.age > 0) '${pet.age} yr${pet.age == 1 ? '' : 's'}',
+      if (pet.gender.isNotEmpty) pet.gender,
     ].join(' · ');
 
     return Container(

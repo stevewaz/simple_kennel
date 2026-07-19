@@ -13,6 +13,8 @@ class Pet {
   String species;
   String breed;
   int age;
+  String gender;
+  String source;
   String notes;
   DateTime createdAt;
 
@@ -23,6 +25,8 @@ class Pet {
     this.species = 'Dog',
     this.breed = '',
     this.age = 0,
+    this.gender = '',
+    this.source = '',
     this.notes = '',
     required this.createdAt,
   }) : id = id.isEmpty ? _pbId() : id;
@@ -37,6 +41,8 @@ class Pet {
         'species': species,
         'breed': breed,
         'age': age,
+        'gender': gender,
+        'source': source,
         'notes': notes,
         'createdAt': createdAt.toIso8601String(),
       };
@@ -48,6 +54,8 @@ class Pet {
         species: m['species'] as String? ?? 'Dog',
         breed: m['breed'] as String? ?? '',
         age: m['age'] as int? ?? 0,
+        gender: m['gender'] as String? ?? '',
+        source: m['source'] as String? ?? '',
         notes: m['notes'] as String? ?? '',
         createdAt: DateTime.tryParse(m['createdAt'] as String? ?? '') ?? DateTime.now(),
       );

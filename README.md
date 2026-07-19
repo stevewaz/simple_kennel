@@ -10,14 +10,12 @@ A kennel management app for small boarding businesses — tracks customers, pets
 - **Schedule** — a run-by-day grid for booking pets in and out, with configurable runs (count + names)
 - **Customers** — customer records with multiple pets each, breed autocomplete, and paperwork photo attachments
 - **Invoices** — draft invoices auto-generated on check-in, line items pulled from a service catalog, PDF export/printing
+- **Reports** — exportable payments report for bookkeeping, plus a printable "run sheet" for staff at check-in
 - **Settings** — business branding, nightly rate, tax rate, run configuration, light/dark theme
 
 ## Data & platforms
 
-Runs on iOS, Android, macOS, and Web. Everything is stored locally on-device — no account, no cloud, no login:
-
-- iOS / Android / macOS / desktop: [Isar](https://isar.dev/) embedded database
-- Web: a simple local JSON store (`localStorage`), intended for quick testing rather than daily production use
+Runs on iOS, Android, macOS, and Web. Each business signs in with one shared login and gets its own fully isolated data, synced live across all of that business's devices via [Firebase](https://firebase.google.com/) (Auth + Firestore). Firestore's offline cache means the app keeps working without a connection — writes made offline sync once you're back online.
 
 ## Development
 
@@ -25,6 +23,7 @@ Standard Flutter project. After cloning:
 
 ```bash
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
+
+Requires a Firebase project (Firestore + Email/Password Auth enabled) and `lib/firebase_options.dart` generated via `flutterfire configure`.

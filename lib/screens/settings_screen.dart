@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import '../services/tenant_settings_service.dart';
 import '../services/theme_service.dart';
-import '../services/prefs_service.dart';
 import '../providers/app_provider.dart';
 import '../models/service.dart';
 import 'package:flutter/services.dart';
@@ -27,13 +28,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl.text = PrefsService.businessName;
-    _addrCtrl.text = PrefsService.businessAddress;
-    _phoneCtrl.text = formatUSPhone(PrefsService.businessPhone);
-    _emailCtrl.text = PrefsService.businessEmail.toLowerCase();
-    final rate = PrefsService.defaultTaxRate;
+    final settings = context.read<TenantSettingsService>();
+    _nameCtrl.text = settings.businessName;
+    _addrCtrl.text = settings.businessAddress;
+    _phoneCtrl.text = formatUSPhone(settings.businessPhone);
+    _emailCtrl.text = settings.businessEmail.toLowerCase();
+    final rate = settings.defaultTaxRate;
     _taxCtrl.text = rate > 0 ? rate.toString() : '';
-    final nightly = PrefsService.nightlyRate;
+    final nightly = settings.nightlyRate;
     _nightlyRateCtrl.text = nightly > 0 ? nightly.toStringAsFixed(2) : '';
   }
 
@@ -50,14 +52,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _save() {
-    PrefsService.businessName = _nameCtrl.text.trim();
-    PrefsService.businessAddress = _addrCtrl.text.trim();
-    PrefsService.businessPhone = _phoneCtrl.text.trim();
-    PrefsService.businessEmail = _emailCtrl.text.trim();
+    final settings = context.read<TenantSettingsService>();
+    settings.updateBusinessInfo(
+      name: _nameCtrl.text.trim(),
+      address: _addrCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+    );
     final rate = double.tryParse(_taxCtrl.text);
-    if (rate != null) PrefsService.defaultTaxRate = rate;
+    if (rate != null) settings.setTaxRate(rate);
     final nightly = double.tryParse(_nightlyRateCtrl.text);
-    if (nightly != null) PrefsService.nightlyRate = nightly;
+    if (nightly != null) settings.setNightlyRate(nightly);
   }
 
   @override
@@ -401,6 +406,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            _SectionLabel('ACCOUNT', theme),
+            _Card(
+              theme: theme,
+              child: InkWell(
+                onTap: () => _confirmSignOut(context),
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: Color(0xFFD4714D)),
+                    const SizedBox(width: 10),
+                    const Text('Sign Out',
+                        style: TextStyle(
+                            color: Color(0xFFD4714D),
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             _SectionLabel('ABOUT', theme),
             _Card(
               theme: theme,
@@ -443,6 +467,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _ServicesSheet(theme: theme),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final theme = context.read<ThemeService>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: theme.cardBgColor,
+        title: Text('Sign Out?', style: TextStyle(color: theme.textColor)),
+        content: Text(
+            'You\'ll need to sign back in to access this business\'s data.',
+            style: TextStyle(color: theme.subtextColor)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel',
+                  style: TextStyle(color: theme.subtextColor))),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sign Out',
+                  style: TextStyle(color: Color(0xFFD4714D)))),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    context.read<AppProvider>().reset();
+    await context.read<AuthService>().signOut();
+    if (context.mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 }
 

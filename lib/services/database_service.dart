@@ -4,12 +4,16 @@ import '../models/booking.dart';
 import '../models/invoice.dart';
 import '../models/service.dart';
 import 'local_store.dart';
-import 'local_store_factory.dart';
+import 'local_store_firestore.dart';
 
-/// Thin facade over the platform-appropriate [LocalStore]
-/// (Isar on native, JSON/SharedPreferences on web).
+/// Thin facade over a [LocalStore], scoped to one signed-in business
+/// (tenant). A fresh [DatabaseService] is constructed per authenticated
+/// session — see `AuthGate` in main.dart.
 class DatabaseService {
-  final LocalStore _store = createLocalStore();
+  final LocalStore _store;
+
+  DatabaseService({required String tenantId})
+      : _store = FirestoreStore(tenantId);
 
   Future<void> initialize() => _store.initialize();
 
@@ -52,4 +56,6 @@ class DatabaseService {
   Future<List<Service>> getServices() => _store.getServices();
   Future<void> saveService(Service s) => _store.saveService(s);
   Future<void> deleteService(Service s) => _store.deleteService(s);
+
+  Stream<void> get changes => _store.changes;
 }

@@ -45,32 +45,32 @@ class Booking {
 
   Map<String, dynamic> toMap() => {
         'id': id,
-        'customer_id': customerId,
+        'customerId': customerId,
         'customerName': customerName,
         'day': day,
         'month': month,
         'year': year,
         'endDay': endDay,
-        'KennelIndex': runIndex,
-        'KennelName': runName,
+        'runIndex': runIndex,
+        'runName': runName,
         'notes': notes,
         'status': status,
-        'check_in_time': checkInTime,
+        'checkInTime': checkInTime,
       };
 
   factory Booking.fromMap(Map<String, dynamic> m) => Booking(
         id: m['id'] as String,
-        customerId: m['customer_id'] as String? ?? '',
+        customerId: m['customerId'] as String? ?? '',
         customerName: m['customerName'] as String? ?? '',
         day: m['day'] as int? ?? 1,
         month: m['month'] as int? ?? 1,
         year: m['year'] as int? ?? DateTime.now().year,
         endDay: m['endDay'] as int? ?? 1,
-        runIndex: m['KennelIndex'] as int? ?? 0,
-        runName: m['KennelName'] as String? ?? '',
+        runIndex: m['runIndex'] as int? ?? 0,
+        runName: m['runName'] as String? ?? '',
         notes: m['notes'] as String? ?? '',
         status: m['status'] as String? ?? 'Scheduled',
-        checkInTime: m['check_in_time'] as String? ?? 'AM',
+        checkInTime: m['checkInTime'] as String? ?? 'AM',
       );
 
   Booking copyWith({String? status, String? notes, String? checkInTime}) =>

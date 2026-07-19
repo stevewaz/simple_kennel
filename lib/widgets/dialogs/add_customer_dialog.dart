@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../data/breeds.dart';
+import '../../data/us_states.dart';
 import '../../models/customer.dart';
 import '../../models/pet.dart';
 import '../../services/theme_service.dart';
@@ -44,8 +45,8 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
   final _phoneCtrl = TextEditingController();
   final _addrCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
-  final _stateCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
+  String? _state;
   bool _saving = false;
 
   late List<Pet> _pets;
@@ -60,7 +61,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       _phoneCtrl.text = formatUSPhone(widget.existing!.phoneNumber);
       _addrCtrl.text = widget.existing!.address;
       _cityCtrl.text = widget.existing!.city;
-      _stateCtrl.text = widget.existing!.state;
+      _state = widget.existing!.state.isEmpty ? null : widget.existing!.state;
       _zipCtrl.text = widget.existing!.zip;
     }
     _pets = List.from(widget.initialPets);
@@ -73,7 +74,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     _phoneCtrl.dispose();
     _addrCtrl.dispose();
     _cityCtrl.dispose();
-    _stateCtrl.dispose();
     _zipCtrl.dispose();
     super.dispose();
   }
@@ -124,7 +124,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       phoneNumber: _phoneCtrl.text.trim(),
       address: _addrCtrl.text.trim(),
       city: _cityCtrl.text.trim(),
-      state: _stateCtrl.text.trim(),
+      state: _state ?? '',
       zip: _zipCtrl.text.trim(),
       createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
     );
@@ -190,13 +190,34 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                     child: _Field(label: 'City', ctrl: _cityCtrl, theme: theme),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    flex: 1,
-                    child: _Field(
-                        label: 'State',
-                        ctrl: _stateCtrl,
-                        theme: theme,
-                        inputFormatters: [StateAbbrFormatter()]),
+                  SizedBox(
+                    width: 92,
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'State',
+                        labelStyle: TextStyle(color: theme.subtextColor),
+                        contentPadding:
+                            const EdgeInsets.only(bottom: 4, top: 4),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: usStateAbbreviations.contains(_state)
+                              ? _state
+                              : null,
+                          hint: Text('--',
+                              style: TextStyle(color: theme.subtextColor)),
+                          dropdownColor: theme.cardBgColor,
+                          isExpanded: true,
+                          isDense: true,
+                          style: TextStyle(color: theme.textColor),
+                          items: usStateAbbreviations
+                              .map((s) =>
+                                  DropdownMenuItem(value: s, child: Text(s)))
+                              .toList(),
+                          onChanged: (v) => setState(() => _state = v),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -298,7 +319,9 @@ class _PetFormDialogState extends State<_PetFormDialog> {
   late final TextEditingController _ageCtrl;
   late final TextEditingController _notesCtrl;
   final FocusNode _breedFocusNode = FocusNode();
+  late final TextEditingController _sourceCtrl;
   late String _species;
+  String? _gender;
   late String _petId;
   late List<String> _photos;
 
@@ -311,8 +334,10 @@ class _PetFormDialogState extends State<_PetFormDialog> {
     _breedCtrl = TextEditingController(text: p?.breed ?? '');
     _ageCtrl = TextEditingController(
         text: p != null && p.age > 0 ? p.age.toString() : '');
+    _sourceCtrl = TextEditingController(text: p?.source ?? '');
     _notesCtrl = TextEditingController(text: p?.notes ?? '');
     _species = p?.species ?? 'Dog';
+    _gender = (p?.gender.isEmpty ?? true) ? null : p!.gender;
     _photos = List.from(widget.existingPhotos);
   }
 
@@ -321,6 +346,7 @@ class _PetFormDialogState extends State<_PetFormDialog> {
     _nameCtrl.dispose();
     _breedCtrl.dispose();
     _ageCtrl.dispose();
+    _sourceCtrl.dispose();
     _notesCtrl.dispose();
     _breedFocusNode.dispose();
     super.dispose();
@@ -419,6 +445,8 @@ class _PetFormDialogState extends State<_PetFormDialog> {
         species: _species,
         breed: _breedCtrl.text.trim(),
         age: int.tryParse(_ageCtrl.text.trim()) ?? 0,
+        gender: _gender ?? '',
+        source: _sourceCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         createdAt: widget.existing?.createdAt ?? DateTime.now().toUtc(),
       ),
@@ -474,11 +502,55 @@ class _PetFormDialogState extends State<_PetFormDialog> {
               else
                 _Field(label: 'Breed', ctrl: _breedCtrl, theme: theme),
               const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Field(
+                        label: 'Age',
+                        ctrl: _ageCtrl,
+                        theme: theme,
+                        keyboard: TextInputType.number),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Gender',
+                        labelStyle: TextStyle(color: theme.subtextColor),
+                        contentPadding:
+                            const EdgeInsets.only(bottom: 4, top: 4),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _gender,
+                          hint: Text('--',
+                              style: TextStyle(color: theme.subtextColor)),
+                          dropdownColor: theme.cardBgColor,
+                          isExpanded: true,
+                          isDense: true,
+                          style: TextStyle(color: theme.textColor),
+                          items: const [
+                            'Male',
+                            'Female',
+                            'Male (Neutered)',
+                            'Female (Spayed)',
+                          ]
+                              .map((g) =>
+                                  DropdownMenuItem(value: g, child: Text(g)))
+                              .toList(),
+                          onChanged: (v) => setState(() => _gender = v),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               _Field(
-                  label: 'Age',
-                  ctrl: _ageCtrl,
-                  theme: theme,
-                  keyboard: TextInputType.number),
+                  label: 'Source',
+                  ctrl: _sourceCtrl,
+                  theme: theme),
               const SizedBox(height: 8),
               _Field(label: 'Notes', ctrl: _notesCtrl, theme: theme),
 

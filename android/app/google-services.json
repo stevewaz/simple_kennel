@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "997900573720",
+    "project_id": "simplekennel-1ca46",
+    "storage_bucket": "simplekennel-1ca46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997900573720:android:3926cca67981a8dd96b76d",
+        "android_client_info": {
+          "package_name": "com.simplekennel.simple_kennel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAclEyYglcwnhvi8C0GjPa3oTTg19MONMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

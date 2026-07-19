@@ -3,7 +3,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/invoice.dart';
-import '../services/prefs_service.dart';
 
 final _dateFmt = DateFormat('MMM d, yyyy');
 final _moneyFmt = NumberFormat.currency(symbol: '\$');
@@ -11,22 +10,39 @@ final _moneyFmt = NumberFormat.currency(symbol: '\$');
 PdfColor get _brand => const PdfColor.fromInt(0xFF7B5EA7);
 
 Future<void> printInvoice(
-    Invoice inv, List<InvoiceLineItem> items) async {
+  Invoice inv,
+  List<InvoiceLineItem> items, {
+  required String businessName,
+  required String businessAddress,
+  required String businessPhone,
+  required String businessEmail,
+}) async {
   await Printing.layoutPdf(
-    onLayout: (format) async => (await _buildPdf(inv, items)).save(),
+    onLayout: (format) async => (await _buildPdf(inv, items,
+            businessName: businessName,
+            businessAddress: businessAddress,
+            businessPhone: businessPhone,
+            businessEmail: businessEmail))
+        .save(),
   );
 }
 
 Future<pw.Document> _buildPdf(
-    Invoice inv, List<InvoiceLineItem> items) async {
+  Invoice inv,
+  List<InvoiceLineItem> items, {
+  required String businessName,
+  required String businessAddress,
+  required String businessPhone,
+  required String businessEmail,
+}) async {
   final doc = pw.Document();
   final font = await PdfGoogleFonts.interRegular();
   final fontBold = await PdfGoogleFonts.interBold();
 
-  final bizName = PrefsService.displayName;
-  final bizAddr = PrefsService.businessAddress;
-  final bizPhone = PrefsService.businessPhone;
-  final bizEmail = PrefsService.businessEmail;
+  final bizName = businessName;
+  final bizAddr = businessAddress;
+  final bizPhone = businessPhone;
+  final bizEmail = businessEmail;
 
   doc.addPage(
     pw.Page(

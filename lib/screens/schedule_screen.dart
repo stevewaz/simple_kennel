@@ -444,9 +444,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       builder: (_) => ViewBookingDialog(
         booking: b,
         onUpdate: (updated) => app.saveBooking(updated),
+        onCheckOut: (booking, {paymentMethod}) =>
+            app.checkOutWithPayment(booking, paymentMethod: paymentMethod),
         onDelete: () => app.deleteBooking(b),
         theme: theme,
         getPets: (customerId) => app.getPets(customerId),
+        getInvoiceForBooking: app.getInvoiceForBooking,
+        onPrintRunSheet: (booking) => app.printRunSheetForBooking(booking),
         onEditCustomer: (customerId) async {
           final customer =
               app.customers.where((c) => c.id == customerId).firstOrNull;

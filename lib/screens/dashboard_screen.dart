@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -145,8 +146,15 @@ class DashboardScreen extends StatelessWidget {
                                         theme: theme,
                                         onCheckIn: a.type == 'Check-in' &&
                                                 a.booking.status != 'CheckedIn'
-                                            ? () => app.checkInWithDraftInvoice(
-                                                a.booking)
+                                            ? () async {
+                                                await app.checkInWithDraftInvoice(
+                                                    a.booking);
+                                                if (!kIsWeb) {
+                                                  await app
+                                                      .printRunSheetForBooking(
+                                                          a.booking);
+                                                }
+                                              }
                                             : null,
                                       ))
                                   .toList(),

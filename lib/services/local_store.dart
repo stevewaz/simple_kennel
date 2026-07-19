@@ -4,8 +4,8 @@ import '../models/booking.dart';
 import '../models/invoice.dart';
 import '../models/service.dart';
 
-/// Local persistence backend. Implemented by an Isar-backed store on
-/// native platforms and a JSON/SharedPreferences store on web.
+/// Persistence backend. Implemented by [FirestoreStore], scoped to one
+/// signed-in business (tenant) across all platforms.
 abstract class LocalStore {
   Future<void> initialize();
 
@@ -43,4 +43,10 @@ abstract class LocalStore {
   Future<List<Service>> getServices();
   Future<void> saveService(Service s);
   Future<void> deleteService(Service s);
+
+  /// Fires whenever this store's data changes for a reason the caller
+  /// didn't directly cause via one of the methods above — e.g. another
+  /// device's edit arriving through a remote listener. No-op for stores
+  /// that are purely local/single-device.
+  Stream<void> get changes;
 }

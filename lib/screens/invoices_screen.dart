@@ -6,6 +6,7 @@ import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../models/invoice.dart';
 import '../widgets/dialogs/add_invoice_dialog.dart';
+import '../widgets/dialogs/payment_method_dialog.dart';
 import '../utils/invoice_pdf.dart';
 
 class InvoicesScreen extends StatefulWidget {
@@ -240,7 +241,15 @@ class _InvoiceTile extends StatelessWidget {
     if (action == 'print') {
       try {
         final items = await app.getLineItems(inv.id);
-        await printInvoice(inv, items);
+        final settings = app.tenantSettings;
+        await printInvoice(
+          inv,
+          items,
+          businessName: settings.displayName,
+          businessAddress: settings.businessAddress,
+          businessPhone: settings.businessPhone,
+          businessEmail: settings.businessEmail,
+        );
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -269,8 +278,28 @@ class _InvoiceTile extends StatelessWidget {
           theme: theme,
         ),
       );
+    } else if (action == 'Paid') {
+      final result = await showDialog<PaymentMethodResult>(
+        context: context,
+        builder: (_) => PaymentMethodDialog(
+          theme: theme,
+          title: 'Mark Paid — ${inv.customerName}',
+          amountLabel: inv.amountDisplay,
+        ),
+      );
+      if (result == null || !result.proceed) return;
+      final items = await app.getLineItems(inv.id);
+      app.saveInvoice(
+        inv.copyWith(
+          status: 'Paid',
+          paymentMethod: result.method,
+          paidAt: DateTime.now(),
+        ),
+        items,
+      );
     } else {
-      app.saveInvoice(inv.copyWith(status: action), []);
+      final items = await app.getLineItems(inv.id);
+      app.saveInvoice(inv.copyWith(status: action), items);
     }
   }
 }

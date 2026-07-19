@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
-import 'prefs_service.dart';
+import 'tenant_settings_service.dart';
 
 class RunsService extends ChangeNotifier {
-  int get count => PrefsService.runCount;
+  final TenantSettingsService _settings;
 
-  String getName(int i) => PrefsService.getRunName(i);
-
-  List<String> get names => List.generate(count, (i) => getName(i));
-
-  void setCount(int v) {
-    PrefsService.runCount = v;
-    notifyListeners();
+  RunsService(this._settings) {
+    _settings.addListener(notifyListeners);
   }
 
-  void setName(int i, String name) {
-    PrefsService.setRunName(i, name);
-    notifyListeners();
+  int get count => _settings.runCount;
+
+  String getName(int i) => _settings.getRunName(i);
+
+  List<String> get names => List.generate(count, getName);
+
+  void setCount(int v) => _settings.setRunCount(v);
+
+  void setName(int i, String name) => _settings.setRunName(i, name);
+
+  @override
+  void dispose() {
+    _settings.removeListener(notifyListeners);
+    super.dispose();
   }
 }

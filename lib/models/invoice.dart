@@ -21,6 +21,8 @@ class Invoice {
   double taxRate;
   double taxAmount;
   double totalAmount;
+  String paymentMethod; // '' | Cash | Check | Credit Card | Other
+  DateTime? paidAt;
   DateTime createdAt;
 
   Invoice({
@@ -37,6 +39,8 @@ class Invoice {
     this.taxRate = 0,
     this.taxAmount = 0,
     this.totalAmount = 0,
+    this.paymentMethod = '',
+    this.paidAt,
     required this.createdAt,
   }) : id = id.isEmpty ? _pbId() : id;
 
@@ -76,6 +80,8 @@ class Invoice {
         'taxRate': taxRate,
         'taxAmount': taxAmount,
         'totalAmount': totalAmount,
+        'paymentMethod': paymentMethod,
+        'paidAt': paidAt?.toIso8601String(),
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -94,10 +100,18 @@ class Invoice {
         taxRate: (m['taxRate'] as num?)?.toDouble() ?? 0,
         taxAmount: (m['taxAmount'] as num?)?.toDouble() ?? 0,
         totalAmount: (m['totalAmount'] as num?)?.toDouble() ?? 0,
+        paymentMethod: m['paymentMethod'] as String? ?? '',
+        paidAt: DateTime.tryParse(m['paidAt'] as String? ?? ''),
         createdAt: DateTime.tryParse(m['createdAt'] as String? ?? '') ?? DateTime.now(),
       );
 
-  Invoice copyWith({String? status, String? notes}) => Invoice(
+  Invoice copyWith({
+    String? status,
+    String? notes,
+    String? paymentMethod,
+    DateTime? paidAt,
+  }) =>
+      Invoice(
         id: id,
         customerId: customerId,
         customerName: customerName,
@@ -111,6 +125,8 @@ class Invoice {
         taxRate: taxRate,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
+        paymentMethod: paymentMethod ?? this.paymentMethod,
+        paidAt: paidAt ?? this.paidAt,
         createdAt: createdAt,
       );
 }

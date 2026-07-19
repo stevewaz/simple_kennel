@@ -32,7 +32,7 @@ class Service {
         'description': description,
         'defaultPrice': defaultPrice,
         'unit': unit,
-        'isActive': isActive ? 1 : 0,
+        'isActive': isActive,
       };
 
   factory Service.fromMap(Map<String, dynamic> m) => Service(
@@ -41,6 +41,6 @@ class Service {
         description: m['description'] as String? ?? '',
         defaultPrice: (m['defaultPrice'] as num?)?.toDouble() ?? 0,
         unit: m['unit'] as String? ?? 'flat fee',
-        isActive: (m['isActive'] as int? ?? 1) == 1,
+        isActive: m['isActive'] as bool? ?? true,
       );
 }
