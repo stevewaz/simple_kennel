@@ -130,7 +130,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         services: app.services,
         getNextInvoiceNumber: app.getNextInvoiceNumber,
         hasInvoiceForBooking: app.hasInvoiceForBooking,
-        defaultTaxRate: theme.isDark ? 0 : 0, // loaded from prefs in dialog
+        defaultTaxRate: app.tenantSettings.defaultTaxRate,
         onSave: (inv, items) => app.saveInvoice(inv, items),
         theme: theme,
       ),
@@ -273,7 +273,7 @@ class _InvoiceTile extends StatelessWidget {
           services: app.services,
           getNextInvoiceNumber: app.getNextInvoiceNumber,
           hasInvoiceForBooking: app.hasInvoiceForBooking,
-          defaultTaxRate: 0,
+          defaultTaxRate: app.tenantSettings.defaultTaxRate,
           onSave: (updated, newItems) => app.saveInvoice(updated, newItems),
           theme: theme,
         ),

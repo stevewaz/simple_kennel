@@ -8,6 +8,7 @@ import '../models/service.dart';
 import 'package:flutter/services.dart';
 import '../services/runs_service.dart';
 import '../utils/input_formatters.dart';
+import '../utils/tenant_providers.dart';
 import '../widgets/dialogs/add_service_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -69,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
     final runs = context.watch<RunsService>();
+    final settings = context.watch<TenantSettingsService>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -406,6 +408,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            _SectionLabel('TEAM', theme),
+            _TeamCard(theme: theme, tenantId: settings.tenantId),
+            const SizedBox(height: 24),
+
             _SectionLabel('ACCOUNT', theme),
             _Card(
               theme: theme,
@@ -465,7 +471,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ServicesSheet(theme: theme),
+      builder: (_) =>
+          withTenantProviders(context, _ServicesSheet(theme: theme)),
     );
   }
 
@@ -497,6 +504,152 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (context.mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
+  }
+}
+
+class _TeamCard extends StatefulWidget {
+  final ThemeService theme;
+  final String tenantId;
+  const _TeamCard({required this.theme, required this.tenantId});
+
+  @override
+  State<_TeamCard> createState() => _TeamCardState();
+}
+
+class _TeamCardState extends State<_TeamCard> {
+  final _inviteCtrl = TextEditingController();
+  bool _inviting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _inviteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _invite() async {
+    final email = _inviteCtrl.text.trim();
+    if (email.isEmpty) return;
+    setState(() {
+      _inviting = true;
+      _error = null;
+    });
+    try {
+      await context
+          .read<AuthService>()
+          .inviteStaff(widget.tenantId, email);
+      _inviteCtrl.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                '$email can now sign up to join — send them the app link.')));
+      }
+    } catch (e) {
+      setState(() => _error = 'Could not send invite. Try again.');
+    } finally {
+      if (mounted) setState(() => _inviting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final currentUid = context.read<AuthService>().currentUser?.uid;
+    final isOwner = currentUid == widget.tenantId;
+
+    return _Card(
+      theme: theme,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.person, size: 16, color: theme.subtextColor),
+              const SizedBox(width: 8),
+              Text(isOwner ? 'You (Owner)' : 'Business Owner',
+                  style: TextStyle(color: theme.textColor, fontSize: 13)),
+            ],
+          ),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream:
+                context.read<AuthService>().staffMembers(widget.tenantId),
+            builder: (context, snapshot) {
+              final members = snapshot.data ?? const [];
+              if (members.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  ...members.map((m) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            Icon(Icons.person_outline,
+                                size: 16, color: theme.subtextColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(m['email'] as String? ?? '',
+                                  style: TextStyle(
+                                      color: theme.textColor, fontSize: 13)),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close,
+                                  size: 16, color: theme.subtextColor),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Remove',
+                              onPressed: () => context
+                                  .read<AuthService>()
+                                  .removeStaffMember(
+                                      widget.tenantId, m['uid'] as String),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+              );
+            },
+          ),
+          Divider(color: theme.borderColor, height: 24),
+          Text('Invite a staff member',
+              style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('They\'ll sign up with this email to join your business.',
+              style: TextStyle(color: theme.subtextColor, fontSize: 12)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _inviteCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: theme.textColor, fontSize: 13),
+                  decoration: const InputDecoration(
+                      labelText: 'Email', isDense: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white),
+                onPressed: _inviting ? null : _invite,
+                child: Text(_inviting ? 'Sending…' : 'Invite'),
+              ),
+            ],
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 6),
+            Text(_error!,
+                style: const TextStyle(
+                    color: Color(0xFFD4714D), fontSize: 12)),
+          ],
+        ],
+      ),
+    );
   }
 }
 

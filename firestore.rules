@@ -1,14 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // The original signed-up account: tenantId == their own uid.
     function isTenantOwner(tenantId) {
       return request.auth != null && request.auth.uid == tenantId;
     }
+
+    // A staff member added later via an email invite.
+    function isTenantStaff(tenantId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+    }
+
+    function isTenantMember(tenantId) {
+      return isTenantOwner(tenantId) || isTenantStaff(tenantId);
+    }
+
+    // A pending invite for the currently signed-in user's own (verified) email.
+    function myInvite() {
+      return get(/databases/$(database)/documents/invites/$(request.auth.token.email.lower()));
+    }
+
     match /tenants/{tenantId} {
-      allow read, write: if isTenantOwner(tenantId);
-      match /{document=**} {
-        allow read, write: if isTenantOwner(tenantId);
+      allow read, write: if isTenantMember(tenantId);
+
+      match /members/{uid} {
+        // Anyone already in the tenant can see/manage the member list.
+        allow read, delete: if isTenantMember(tenantId);
+        // A newly-signed-up user can add themself as a member, but only if
+        // they hold a still-pending invite that names this exact tenant —
+        // this is what lets `AuthService.signUp` complete the "join" flow
+        // without needing a Cloud Function or custom claims.
+        allow create: if request.auth != null && request.auth.uid == uid &&
+          myInvite().data.tenantId == tenantId;
       }
+
+      match /{document=**} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+    }
+
+    // Keyed by the invited person's lowercased email. Readable by anyone
+    // (by exact, already-known doc id only — this is not listable) so an
+    // unauthenticated signup flow can check "is this email invited?" and
+    // by the newly-created account itself to redeem/delete it. Writable by
+    // any existing member of the tenant being invited to.
+    match /invites/{email} {
+      allow get: if true;
+      allow create: if isTenantMember(request.resource.data.tenantId);
+      allow delete: if isTenantMember(resource.data.tenantId) ||
+        (request.auth != null && request.auth.token.email.lower() == email);
+    }
+
+    // Maps a uid to the tenant it actually belongs to — needed because a
+    // staff member's tenantId is NOT their own uid (only true for the
+    // original owner). Written once at signup, read on every sign-in.
+    match /userTenants/{uid} {
+      allow read, create: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

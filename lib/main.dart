@@ -11,6 +11,7 @@ import 'services/theme_service.dart';
 import 'services/runs_service.dart';
 import 'services/prefs_service.dart';
 import 'providers/app_provider.dart';
+import 'utils/tenant_providers.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -63,6 +64,11 @@ class RunbookApp extends StatelessWidget {
 /// [DatabaseService]/[AppProvider]/[RunsService] set is constructed per
 /// signed-in user — keyed on their uid — so a different business logging
 /// in later on the same device can never reuse the previous tenant's data.
+///
+/// A signed-in user's tenantId isn't always their own uid — a staff member
+/// who joined via invite shares someone else's tenant — so this first
+/// resolves the real tenantId (`AuthService.resolveTenantId`) before
+/// building the provider tree.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -70,23 +76,33 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<User?>();
     if (user == null) return const LoginScreen();
-    return MultiProvider(
+    return FutureBuilder<String>(
       key: ValueKey(user.uid),
-      providers: [
-        ChangeNotifierProvider<TenantSettingsService>(
-          create: (_) => TenantSettingsService(user.uid),
-        ),
-        ChangeNotifierProvider<RunsService>(
-          create: (context) => RunsService(context.read<TenantSettingsService>()),
-        ),
-        ChangeNotifierProvider<AppProvider>(
-          create: (context) => AppProvider(
-            DatabaseService(tenantId: user.uid),
-            context.read<TenantSettingsService>(),
-          ),
-        ),
-      ],
-      child: const MainShell(),
+      future: context.read<AuthService>().resolveTenantId(user.uid),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const ColoredBox(color: Colors.white);
+        }
+        final tenantId = snapshot.data!;
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider<TenantSettingsService>(
+              create: (_) => TenantSettingsService(tenantId),
+            ),
+            ChangeNotifierProvider<RunsService>(
+              create: (context) =>
+                  RunsService(context.read<TenantSettingsService>()),
+            ),
+            ChangeNotifierProvider<AppProvider>(
+              create: (context) => AppProvider(
+                DatabaseService(tenantId: tenantId),
+                context.read<TenantSettingsService>(),
+              ),
+            ),
+          ],
+          child: const MainShell(),
+        );
+      },
     );
   }
 }
@@ -152,7 +168,8 @@ class _MainShellState extends State<MainShell> {
             tooltip: 'Reports',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ReportsScreen()),
+              MaterialPageRoute(builder: (_) => withTenantProviders(
+                  context, const ReportsScreen())),
             ),
           ),
           IconButton(
@@ -160,7 +177,8 @@ class _MainShellState extends State<MainShell> {
             tooltip: 'Settings',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              MaterialPageRoute(builder: (_) => withTenantProviders(
+                  context, const SettingsScreen())),
             ),
           ),
         ],

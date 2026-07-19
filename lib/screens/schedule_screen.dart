@@ -301,7 +301,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                             ? _viewBooking(
                                                 context, booking, app, theme)
                                             : _addBooking(context, d, runI,
-                                                runNames[runI], app, theme),
+                                                runNames[runI], app, runs, theme),
                                         child: Container(
                                           width: kCellW,
                                           height: kCellH,
@@ -406,7 +406,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
         onPressed: () =>
-            _addBooking(context, DateTime.now().day, 0, 'Run 1', app, theme),
+            _addBooking(context, DateTime.now().day, 0, 'Run 1', app, runs, theme),
         child: const Icon(Icons.add),
       ),
     );
@@ -421,7 +421,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _addBooking(BuildContext context, int day, int runIndex, String runName,
-      AppProvider app, ThemeService theme) {
+      AppProvider app, RunsService runs, ThemeService theme) {
     showDialog(
       context: context,
       builder: (_) => AddBookingDialog(
@@ -431,6 +431,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         initialRunIndex: runIndex,
         initialRunName: runName,
         customers: app.customers,
+        runs: runs,
         onSave: (b) => app.saveBooking(b),
         theme: theme,
       ),

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../models/invoice.dart';
 import '../../models/customer.dart';
 import '../../models/booking.dart';
 import '../../models/service.dart';
 import '../../services/theme_service.dart';
-import '../../services/tenant_settings_service.dart';
 
 class AddInvoiceDialog extends StatefulWidget {
   final Invoice? existing;
@@ -58,7 +56,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
   @override
   void initState() {
     super.initState();
-    final taxRate = context.read<TenantSettingsService>().defaultTaxRate;
+    final taxRate = widget.defaultTaxRate;
     _taxCtrl.text = taxRate > 0 ? taxRate.toStringAsFixed(0) : '';
 
     if (widget.existing != null) {

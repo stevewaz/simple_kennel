@@ -17,8 +17,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  final _emailFocus = FocusNode();
   String? _error;
   bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  String? _invitedBusinessName;
+  bool _checkingInvite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) _checkInvite();
+    });
+  }
 
   @override
   void dispose() {
@@ -26,11 +39,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
+    _emailFocus.dispose();
     super.dispose();
   }
 
+  Future<void> _checkInvite() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) return;
+    setState(() => _checkingInvite = true);
+    final businessName = await context.read<AuthService>().checkInvite(email);
+    if (mounted) {
+      setState(() {
+        _invitedBusinessName = businessName;
+        _checkingInvite = false;
+      });
+    }
+  }
+
   Future<void> _signUp() async {
-    if (_businessNameCtrl.text.trim().isEmpty) {
+    final joining = _invitedBusinessName != null;
+    if (!joining && _businessNameCtrl.text.trim().isEmpty) {
       setState(() => _error = 'Enter your business name.');
       return;
     }
@@ -75,6 +103,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
+    final joining = _invitedBusinessName != null;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -93,7 +122,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Create your business account',
+                  Text(
+                      joining
+                          ? 'Join $_invitedBusinessName'
+                          : 'Create your business account',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: theme.textColor,
@@ -101,39 +133,78 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                      'One login is shared across your business\'s devices.',
+                      joining
+                          ? 'You were invited to this business — set a password to finish joining.'
+                          : 'One login is shared across your business\'s devices.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: theme.subtextColor, fontSize: 13)),
                   const SizedBox(height: 24),
-                  TextField(
-                    controller: _businessNameCtrl,
-                    style: TextStyle(color: theme.textColor),
-                    decoration:
-                        const InputDecoration(labelText: 'Business Name'),
-                  ),
-                  const SizedBox(height: 12),
+                  if (!joining) ...[
+                    TextField(
+                      controller: _businessNameCtrl,
+                      style: TextStyle(color: theme.textColor),
+                      decoration:
+                          const InputDecoration(labelText: 'Business Name'),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   TextField(
                     controller: _emailCtrl,
+                    focusNode: _emailFocus,
                     keyboardType: TextInputType.emailAddress,
                     inputFormatters: [LowercaseEmailFormatter()],
                     style: TextStyle(color: theme.textColor),
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      suffixIcon: _checkingInvite
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)))
+                          : null,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _passwordCtrl,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     style: TextStyle(color: theme.textColor),
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: theme.subtextColor,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _confirmCtrl,
-                    obscureText: true,
+                    obscureText: _obscureConfirm,
                     style: TextStyle(color: theme.textColor),
-                    decoration: const InputDecoration(
-                        labelText: 'Confirm Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: theme.subtextColor,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscureConfirm = !_obscureConfirm),
+                      ),
+                    ),
                     onSubmitted: (_) => _signUp(),
                   ),
                   if (_error != null) ...[
@@ -149,8 +220,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: _loading ? null : _signUp,
-                    child: Text(
-                        _loading ? 'Creating account…' : 'Create Account'),
+                    child: Text(_loading
+                        ? 'Creating account…'
+                        : (joining ? 'Join Business' : 'Create Account')),
                   ),
                 ],
               ),

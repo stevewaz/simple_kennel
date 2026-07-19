@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../models/booking.dart';
 import '../../models/customer.dart';
 import '../../services/theme_service.dart';
@@ -13,6 +12,7 @@ class AddBookingDialog extends StatefulWidget {
   final int initialRunIndex;
   final String initialRunName;
   final List<Customer> customers;
+  final RunsService runs;
   final Future<void> Function(Booking) onSave;
   final ThemeService theme;
 
@@ -24,6 +24,7 @@ class AddBookingDialog extends StatefulWidget {
     required this.initialRunIndex,
     required this.initialRunName,
     required this.customers,
+    required this.runs,
     required this.onSave,
     required this.theme,
   });
@@ -100,7 +101,7 @@ class _AddBookingDialogState extends State<AddBookingDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = widget.theme;
-    final runs = context.watch<RunsService>();
+    final runs = widget.runs;
 
     return AlertDialog(
       backgroundColor: theme.cardBgColor,
