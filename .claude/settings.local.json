@@ -28,10 +28,20 @@
       "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel config user.name)",
       "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel config user.email)",
       "Bash(git config *)",
-      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel status --short)"
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel status --short)",
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel remote -v)",
+      "Bash(mkdir -p /Users/stephenwasielewski/Apps/simple_kennel/.github/workflows)",
+      "Bash(git -C /Users/stephenwasielewski/Apps/simple_kennel log --oneline -3)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git commit -m ' *)",
+      "Bash(dart run *)",
+      "Bash(chmod +x /Users/stephenwasielewski/Apps/simple_kennel/scripts/migrate_bookings.sh)"
     ],
     "additionalDirectories": [
-      "/Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build"
+      "/Users/stephenwasielewski/.pub-cache/hosted/pub.dev/drift-2.34.0/extension/devtools/build",
+      "/Users/stephenwasielewski/Apps/simple_kennel/.github"
     ]
   }
 }
