@@ -57,7 +57,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final bytes = Uint8List.fromList(utf8.encode(csv));
       final fileName =
           'runbook-payments-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
-      await FilePicker.platform.saveFile(
+      await FilePicker.saveFile(
         dialogTitle: 'Save payments report',
         fileName: fileName,
         type: FileType.custom,

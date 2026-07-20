@@ -412,7 +412,7 @@ class _PetFormDialogState extends State<_PetFormDialog> {
       if (mounted) setState(() => _photos.add(dest));
     } else {
       // Desktop: native file system picker — any file type
-      final result = await FilePicker.platform.pickFiles(allowMultiple: false);
+      final result = await FilePicker.pickFiles(allowMultiple: false);
       if (result == null || result.files.isEmpty || !mounted) return;
       final picked = result.files.first;
       if (picked.path == null) return;

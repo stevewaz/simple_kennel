@@ -19,7 +19,10 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "9.0.1" apply false
+    // Pinned below AGP 9: cloud_firestore's Android module still
+    // self-applies org.jetbrains.kotlin.android unconditionally and isn't
+    // AGP9/built-in-Kotlin aware yet (see gradle.properties for detail).
+    id("com.android.application") version "8.13.0" apply false
     // START: FlutterFire Configuration
     id("com.google.gms.google-services") version("4.4.4") apply false
     // END: FlutterFire Configuration
