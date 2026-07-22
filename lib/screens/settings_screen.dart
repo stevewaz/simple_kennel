@@ -269,6 +269,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Divider(color: theme.borderColor, height: 24),
                   _TeamCard(theme: theme, tenantId: settings.tenantId),
                   Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReportsSheet()),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assessment_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Reports',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('View and export payment reports',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
