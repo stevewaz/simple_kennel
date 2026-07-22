@@ -82,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = context.watch<ThemeService>();
     final runs = context.watch<RunsService>();
     final settings = context.watch<TenantSettingsService>();
+    final app = context.watch<AppProvider>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
