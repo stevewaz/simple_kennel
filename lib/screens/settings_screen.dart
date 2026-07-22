@@ -271,6 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _TeamCard(theme: theme, tenantId: settings.tenantId),
                   Divider(color: theme.borderColor, height: 24),
                   _ReportsCard(theme: theme, app: app),
+                  Divider(color: theme.borderColor, height: 24),
+                  _InvoicesExportCard(theme: theme, app: app),
                 ],
               ),
             ),
@@ -1344,6 +1346,223 @@ class _ReportsCardState extends State<_ReportsCard> {
                   style: TextStyle(color: widget.theme.subtextColor)),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _InvoicesExportCard extends StatefulWidget {
+  final ThemeService theme;
+  final AppProvider app;
+  const _InvoicesExportCard({required this.theme, required this.app});
+
+  @override
+  State<_InvoicesExportCard> createState() => _InvoicesExportCardState();
+}
+
+class _InvoicesExportCardState extends State<_InvoicesExportCard> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _exporting = false;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, 1);
+    _end = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _start = DateTime(picked.year, picked.month, picked.day);
+        if (_end.isBefore(_start)) _end = _start;
+      } else {
+        _end = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_start.isAfter(_end)) _start = _end;
+      }
+    });
+  }
+
+  Future<void> _export(List<Invoice> invoices) async {
+    setState(() => _exporting = true);
+    try {
+      final csv = _buildInvoicesCsv(invoices);
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final fileName =
+          'invoices-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
+      await FilePicker.saveFile(
+        dialogTitle: 'Save invoices export',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes,
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  String _buildInvoicesCsv(List<Invoice> invoices) {
+    final buffer = StringBuffer();
+    buffer.writeln('Invoice Number,Customer Name,Amount,Status,Issue Date,Due Date,Payment Method,Paid At');
+    for (final inv in invoices) {
+      buffer.writeln(
+          '${inv.invoiceNumber},${inv.customerName},${inv.totalAmount},${inv.status},${DateFormat('yyyy-MM-dd').format(inv.issueDate)},${DateFormat('yyyy-MM-dd').format(inv.dueDate)},${inv.paymentMethod ?? ''},${inv.paidAt != null ? DateFormat('yyyy-MM-dd').format(inv.paidAt!) : ''}');
+    }
+    return buffer.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final endOfDay = DateTime(_end.year, _end.month, _end.day, 23, 59, 59);
+    final invoices = widget.app.invoices
+        .where((inv) =>
+            inv.issueDate.isAfter(_start) && inv.issueDate.isBefore(endOfDay))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Export Invoices',
+            style: TextStyle(
+                color: widget.theme.textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text('Export all invoices in a date range as CSV',
+            style: TextStyle(
+                color: widget.theme.subtextColor, fontSize: 12)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pickDate(isStart: true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.formBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.inputBorderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From',
+                          style: TextStyle(
+                              color: widget.theme.subtextColor, fontSize: 11)),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(_dateFmt.format(_start),
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
+                          ),
+                          Icon(Icons.calendar_today,
+                              size: 14, color: widget.theme.subtextColor),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pickDate(isStart: false),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.formBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.inputBorderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('To',
+                          style: TextStyle(
+                              color: widget.theme.subtextColor, fontSize: 11)),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(_dateFmt.format(_end),
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
+                          ),
+                          Icon(Icons.calendar_today,
+                              size: 14, color: widget.theme.subtextColor),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: widget.theme.cardBgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: widget.theme.borderColor),
+          ),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${invoices.length} invoice${invoices.length == 1 ? '' : 's'}',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontWeight: FontWeight.w600)),
+                  Text('\$${invoices.fold<double>(0, (sum, i) => sum + i.totalAmount).toStringAsFixed(2)} total',
+                      style: TextStyle(
+                          color: widget.theme.primaryColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.theme.primaryColor,
+                    foregroundColor: Colors.white),
+                icon: _exporting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.download, size: 16),
+                label: const Text('Export CSV'),
+                onPressed: invoices.isEmpty || _exporting
+                    ? null
+                    : () => _export(invoices),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
