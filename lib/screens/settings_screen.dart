@@ -1205,142 +1205,139 @@ class _ReportsSheetState extends State<ReportsSheet> {
       appBar: AppBar(
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: true,
         title: const Text('Payment Reports',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('Payments',
-                style: TextStyle(
-                    color: theme.textColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Paid invoices in the selected date range, ready to export for QuickBooks or your bookkeeper.',
-                style: TextStyle(color: theme.subtextColor, fontSize: 12)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardBgColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: theme.borderColor),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Start Date',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text(_dateFmt.format(_start),
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _pickDate(isStart: true),
-                        child: Text('Change',
-                            style: TextStyle(color: theme.primaryColor)),
-                      ),
-                    ],
-                  ),
-                  Divider(color: theme.borderColor, height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('End Date',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text(_dateFmt.format(_end),
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _pickDate(isStart: false),
-                        child: Text('Change',
-                            style: TextStyle(color: theme.primaryColor)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text('Payments',
+              style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('Paid invoices in the selected date range, ready to export for QuickBooks or your bookkeeper.',
+              style: TextStyle(color: theme.subtextColor, fontSize: 12)),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardBgColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.borderColor),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardBgColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: theme.borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Total Revenue',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('${invoices.length} invoices',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      Text('\$${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  if (invoices.isNotEmpty) ...[
-                    Divider(color: theme.borderColor, height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.primaryColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.download),
-                        label: Text(_exporting ? 'Exporting...' : 'Export as CSV'),
-                        onPressed: _exporting ? null : () => _export(invoices),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Start Date',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(_dateFmt.format(_start),
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 13)),
+                        ],
                       ),
                     ),
+                    TextButton(
+                      onPressed: () => _pickDate(isStart: true),
+                      child: Text('Change',
+                          style: TextStyle(color: theme.primaryColor)),
+                    ),
                   ],
-                ],
-              ),
+                ),
+                Divider(color: theme.borderColor, height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('End Date',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(_dateFmt.format(_end),
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _pickDate(isStart: false),
+                      child: Text('Change',
+                          style: TextStyle(color: theme.primaryColor)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardBgColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.borderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Total Revenue',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold)),
+                          Text('${invoices.length} invoices',
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Text('\$${total.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            color: theme.primaryColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                if (invoices.isNotEmpty) ...[
+                  Divider(color: theme.borderColor, height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.download),
+                      label: Text(_exporting ? 'Exporting...' : 'Export as CSV'),
+                      onPressed: _exporting ? null : () => _export(invoices),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
