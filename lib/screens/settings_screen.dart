@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import '../services/tenant_settings_service.dart';
 import '../services/theme_service.dart';
 import '../providers/app_provider.dart';
 import '../models/service.dart';
+import '../models/invoice.dart';
 import 'package:flutter/services.dart';
 import '../services/runs_service.dart';
 import '../utils/input_formatters.dart';
 import '../utils/tenant_providers.dart';
+import '../utils/payments_csv.dart';
 import '../widgets/dialogs/add_service_dialog.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -262,6 +268,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   Divider(color: theme.borderColor, height: 24),
                   _TeamCard(theme: theme, tenantId: settings.tenantId),
+                  Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReportsSheet()),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assessment_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Reports',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('View and export payment reports',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1080,6 +1125,220 @@ class _RunNamesSheetState extends State<_RunNamesSheet> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ReportsSheet extends StatefulWidget {
+  const ReportsSheet({super.key});
+
+  @override
+  State<ReportsSheet> createState() => _ReportsSheetState();
+}
+
+class _ReportsSheetState extends State<ReportsSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _exporting = false;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, 1);
+    _end = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _start = DateTime(picked.year, picked.month, picked.day);
+        if (_end.isBefore(_start)) _end = _start;
+      } else {
+        _end = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_start.isAfter(_end)) _start = _end;
+      }
+    });
+  }
+
+  Future<void> _export(List<Invoice> invoices) async {
+    setState(() => _exporting = true);
+    try {
+      final csv = buildPaymentsCsv(invoices);
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final fileName =
+          'runbook-payments-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
+      await FilePicker.saveFile(
+        dialogTitle: 'Save payments report',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes,
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppProvider>();
+    final theme = context.watch<ThemeService>();
+    final endOfDay = DateTime(_end.year, _end.month, _end.day, 23, 59, 59);
+    final invoices = app.paidInvoicesBetween(_start, endOfDay);
+    final total = invoices.fold<double>(0, (sum, i) => sum + i.totalAmount);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBgColor,
+      appBar: AppBar(
+        backgroundColor: theme.primaryColor,
+        foregroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const Text('Payment Reports',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Payments',
+                style: TextStyle(
+                    color: theme.textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Paid invoices in the selected date range, ready to export for QuickBooks or your bookkeeper.',
+                style: TextStyle(color: theme.subtextColor, fontSize: 12)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardBgColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: theme.borderColor),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Start Date',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(_dateFmt.format(_start),
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _pickDate(isStart: true),
+                        child: Text('Change',
+                            style: TextStyle(color: theme.primaryColor)),
+                      ),
+                    ],
+                  ),
+                  Divider(color: theme.borderColor, height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('End Date',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(_dateFmt.format(_end),
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _pickDate(isStart: false),
+                        child: Text('Change',
+                            style: TextStyle(color: theme.primaryColor)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardBgColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: theme.borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Total Revenue',
+                                style: TextStyle(
+                                    color: theme.textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            Text('${invoices.length} invoices',
+                                style: TextStyle(
+                                    color: theme.subtextColor, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Text('\$${total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                              color: theme.primaryColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  if (invoices.isNotEmpty) ...[
+                    Divider(color: theme.borderColor, height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.download),
+                        label: Text(_exporting ? 'Exporting...' : 'Export as CSV'),
+                        onPressed: _exporting ? null : () => _export(invoices),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
