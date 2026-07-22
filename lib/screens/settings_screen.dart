@@ -105,11 +105,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             if (_isOwner) ...[
-            _SectionLabel('BRANDING', theme),
+            _SectionLabel('ADMIN CENTER', theme),
             _Card(
               theme: theme,
               child: Column(
                 children: [
+                  Text('Business Info',
+                      style: TextStyle(
+                          color: theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _nameCtrl,
                     decoration: const InputDecoration(
@@ -128,16 +134,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _LabeledField(label: 'Phone', ctrl: _phoneCtrl, hint: '(555) 123-4567', keyboard: TextInputType.phone, theme: theme, onChanged: (_) => _save(), inputFormatters: [USPhoneInputFormatter()]),
                   Divider(color: theme.borderColor, height: 12),
                   _LabeledField(label: 'Email', ctrl: _emailCtrl, hint: 'hello@yourbusiness.com', keyboard: TextInputType.emailAddress, theme: theme, onChanged: (_) => _save(), inputFormatters: [LowercaseEmailFormatter()]),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _SectionLabel('BILLING', theme),
-            _Card(
-              theme: theme,
-              child: Column(
-                children: [
+                  Divider(color: theme.borderColor, height: 24),
+                  Text('Taxes',
+                      style: TextStyle(
+                          color: theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -221,6 +224,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold)),
                     ],
                   ),
+                  Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showServicesSheet(context, theme),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.storefront_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Products & Services',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Manage your billing catalog',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
+                  Divider(color: theme.borderColor, height: 24),
+                  _TeamCard(theme: theme, tenantId: settings.tenantId),
                 ],
               ),
             ),
@@ -301,125 +342,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            if (_isOwner) ...[
-            _SectionLabel('CATALOG', theme),
-            _Card(
-              theme: theme,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _showServicesSheet(context, theme),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(Icons.storefront_outlined,
-                          color: theme.primaryColor, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Products & Services',
-                              style: TextStyle(
-                                  color: theme.textColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
-                          Text('Manage your billing catalog',
-                              style: TextStyle(
-                                  color: theme.subtextColor, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: theme.subtextColor),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _SectionLabel('RUNS', theme),
-            _Card(
-              theme: theme,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Number of Runs',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Total kennel runs on the schedule',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      _Stepper(
-                        value: runs.count,
-                        min: 1,
-                        max: 50,
-                        theme: theme,
-                        onChanged: (v) => runs.setCount(v),
-                      ),
-                    ],
-                  ),
-                  Divider(color: theme.borderColor, height: 24),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _showRunNamesSheet(context, theme, runs),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.edit_outlined,
-                              color: theme.primaryColor, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Run Names',
-                                  style: TextStyle(
-                                      color: theme.textColor,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold)),
-                              Text('Customize the label for each run',
-                                  style: TextStyle(
-                                      color: theme.subtextColor, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right, color: theme.subtextColor),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-              _SectionLabel('ADMIN CENTER', theme),
-              _TeamCard(theme: theme, tenantId: settings.tenantId),
-              const SizedBox(height: 24),
-            ],
 
             _SectionLabel('ACCOUNT', theme),
             _Card(
