@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/theme_service.dart';
 import '../models/booking.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -59,6 +60,21 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
+      appBar: AppBar(
+        backgroundColor: theme.primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text('Dashboard',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.assessment_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReportsSheet()),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -68,15 +84,6 @@ class DashboardScreen extends StatelessWidget {
               Text(
                 DateFormat('EEEE, MMMM d, yyyy').format(today),
                 style: TextStyle(color: theme.subtextColor, fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Dashboard',
-                style: TextStyle(
-                  color: theme.textColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
               const SizedBox(height: 16),
 
