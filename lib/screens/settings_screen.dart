@@ -1296,44 +1296,46 @@ class _ReportsCardState extends State<_ReportsCard> {
             ],
           ),
         ),
-        if (invoices.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ...invoices.map((inv) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: widget.theme.cardBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: widget.theme.borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(inv.customerName,
-                              style: TextStyle(
-                                  color: widget.theme.textColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13)),
-                          Text(
-                              '${inv.invoiceNumber} · ${inv.paymentMethod} · ${_dateFmt.format(inv.paidAt!)}',
-                              style: TextStyle(
-                                  color: widget.theme.subtextColor,
-                                  fontSize: 11)),
-                        ],
+        if (invoices.isNotEmpty)
+          ...[
+            const SizedBox(height: 12),
+            ...invoices.map((inv) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.cardBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(inv.customerName,
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13)),
+                            Text(
+                                '${inv.invoiceNumber} · ${inv.paymentMethod} · ${_dateFmt.format(inv.paidAt!)}',
+                                style: TextStyle(
+                                    color: widget.theme.subtextColor,
+                                    fontSize: 11)),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(inv.amountDisplay,
-                        style: TextStyle(
-                            color: widget.theme.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14)),
-                  ],
-                ),
-              )),
-        ] else
+                      Text(inv.amountDisplay,
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                    ],
+                  ),
+                )),
+          ]
+        else
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
