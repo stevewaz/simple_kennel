@@ -25,11 +25,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _emailCtrl = TextEditingController();
   final _taxCtrl = TextEditingController();
   final _nightlyRateCtrl = TextEditingController();
+  late final TenantSettingsService _settings;
+  late final bool _isOwner;
 
   @override
   void initState() {
     super.initState();
-    final settings = context.read<TenantSettingsService>();
+    final settings = _settings = context.read<TenantSettingsService>();
+    _isOwner =
+        context.read<AuthService>().currentUser?.uid == settings.tenantId;
     _nameCtrl.text = settings.businessName;
     _addrCtrl.text = settings.businessAddress;
     _phoneCtrl.text = formatUSPhone(settings.businessPhone);
@@ -53,7 +57,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _save() {
-    final settings = context.read<TenantSettingsService>();
+    if (!_isOwner) return;
+    final settings = _settings;
     settings.updateBusinessInfo(
       name: _nameCtrl.text.trim(),
       address: _addrCtrl.text.trim(),
@@ -99,6 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            if (_isOwner) ...[
             _SectionLabel('BRANDING', theme),
             _Card(
               theme: theme,
@@ -219,6 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            ],
 
             _SectionLabel('APPEARANCE', theme),
             _Card(
@@ -295,6 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            if (_isOwner) ...[
             _SectionLabel('CATALOG', theme),
             _Card(
               theme: theme,
@@ -408,9 +416,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('TEAM', theme),
-            _TeamCard(theme: theme, tenantId: settings.tenantId),
-            const SizedBox(height: 24),
+              _SectionLabel('ADMIN CENTER', theme),
+              _TeamCard(theme: theme, tenantId: settings.tenantId),
+              const SizedBox(height: 24),
+            ],
 
             _SectionLabel('ACCOUNT', theme),
             _Card(
@@ -554,8 +563,6 @@ class _TeamCardState extends State<_TeamCard> {
   @override
   Widget build(BuildContext context) {
     final theme = widget.theme;
-    final currentUid = context.read<AuthService>().currentUser?.uid;
-    final isOwner = currentUid == widget.tenantId;
 
     return _Card(
       theme: theme,
@@ -566,7 +573,7 @@ class _TeamCardState extends State<_TeamCard> {
             children: [
               Icon(Icons.person, size: 16, color: theme.subtextColor),
               const SizedBox(width: 8),
-              Text(isOwner ? 'You (Owner)' : 'Business Owner',
+              Text('You (Owner)',
                   style: TextStyle(color: theme.textColor, fontSize: 13)),
             ],
           ),

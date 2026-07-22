@@ -116,6 +116,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _tab = 0;
+  late final bool _isOwner;
 
   static const _labels = [
     'Dashboard', 'Schedule', 'Customers', 'Invoices',
@@ -145,6 +146,8 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    _isOwner = context.read<AuthService>().currentUser?.uid ==
+        context.read<TenantSettingsService>().tenantId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppProvider>().loadAll();
     });
@@ -153,6 +156,7 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
+    final isOwner = _isOwner;
 
     return Scaffold(
       appBar: AppBar(
@@ -163,6 +167,7 @@ class _MainShellState extends State<MainShell> {
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
+          if (isOwner)
           IconButton(
             icon: const Icon(Icons.summarize_outlined, color: Colors.white),
             tooltip: 'Reports',

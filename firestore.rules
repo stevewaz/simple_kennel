@@ -25,8 +25,11 @@ service cloud.firestore {
       allow read, write: if isTenantMember(tenantId);
 
       match /members/{uid} {
-        // Anyone already in the tenant can see/manage the member list.
-        allow read, delete: if isTenantMember(tenantId);
+        // Anyone already in the tenant can see the member list, but only the
+        // owner can remove someone — team management lives in the owner-only
+        // Admin Center in Settings.
+        allow read: if isTenantMember(tenantId);
+        allow delete: if isTenantOwner(tenantId);
         // A newly-signed-up user can add themself as a member, but only if
         // they hold a still-pending invite that names this exact tenant —
         // this is what lets `AuthService.signUp` complete the "join" flow
@@ -43,12 +46,12 @@ service cloud.firestore {
     // Keyed by the invited person's lowercased email. Readable by anyone
     // (by exact, already-known doc id only — this is not listable) so an
     // unauthenticated signup flow can check "is this email invited?" and
-    // by the newly-created account itself to redeem/delete it. Writable by
-    // any existing member of the tenant being invited to.
+    // by the newly-created account itself to redeem/delete it. Only the
+    // tenant owner can create invites (staff can't add other staff).
     match /invites/{email} {
       allow get: if true;
-      allow create: if isTenantMember(request.resource.data.tenantId);
-      allow delete: if isTenantMember(resource.data.tenantId) ||
+      allow create: if isTenantOwner(request.resource.data.tenantId);
+      allow delete: if isTenantOwner(resource.data.tenantId) ||
         (request.auth != null && request.auth.token.email.lower() == email);
     }
 
