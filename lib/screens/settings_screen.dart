@@ -189,7 +189,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   Divider(color: theme.borderColor, height: 24),
-                  _TeamCard(theme: theme, tenantId: settings.tenantId),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showTeamSheet(context, theme, settings.tenantId),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.people_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Team',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Manage staff members',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
                   Divider(color: theme.borderColor, height: 24),
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -395,6 +429,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         taxCtrl: _taxCtrl,
         onSave: _save,
       ),
+    );
+  }
+
+  void _showTeamSheet(BuildContext context, ThemeService theme, String tenantId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TeamBottomSheet(theme: theme, tenantId: tenantId),
     );
   }
 
@@ -2029,6 +2072,201 @@ class _BusinessInfoBottomSheetState extends State<_BusinessInfoBottomSheet> {
                     ],
                   ),
                   const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamBottomSheet extends StatefulWidget {
+  final ThemeService theme;
+  final String tenantId;
+
+  const _TeamBottomSheet({
+    required this.theme,
+    required this.tenantId,
+  });
+
+  @override
+  State<_TeamBottomSheet> createState() => _TeamBottomSheetState();
+}
+
+class _TeamBottomSheetState extends State<_TeamBottomSheet> {
+  final _inviteCtrl = TextEditingController();
+  bool _inviting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _inviteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _invite() async {
+    final email = _inviteCtrl.text.trim();
+    if (email.isEmpty) return;
+    setState(() {
+      _inviting = true;
+      _error = null;
+    });
+    try {
+      await context
+          .read<AuthService>()
+          .inviteStaff(widget.tenantId, email);
+      _inviteCtrl.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                '$email can now sign up to join — send them the app link.')));
+      }
+    } catch (e) {
+      setState(() => _error = 'Could not send invite. Try again.');
+    } finally {
+      if (mounted) setState(() => _inviting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: widget.theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Team',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: widget.theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: widget.theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: widget.theme.subtextColor),
+                      const SizedBox(width: 8),
+                      Text('You (Owner)',
+                          style: TextStyle(color: widget.theme.textColor, fontSize: 13)),
+                    ],
+                  ),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream:
+                        context.read<AuthService>().staffMembers(widget.tenantId),
+                    builder: (context, snapshot) {
+                      final members = snapshot.data ?? const [];
+                      if (members.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          ...members.map((m) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.person_outline,
+                                        size: 16, color: widget.theme.subtextColor),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(m['email'] as String? ?? '',
+                                          style: TextStyle(
+                                              color: widget.theme.textColor, fontSize: 13)),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.close,
+                                          size: 16, color: widget.theme.subtextColor),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      tooltip: 'Remove',
+                                      onPressed: () => context
+                                          .read<AuthService>()
+                                          .removeStaffMember(
+                                              widget.tenantId, m['uid'] as String),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Invite a staff member',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('They\'ll sign up with this email to join your business.',
+                      style: TextStyle(color: widget.theme.subtextColor, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _inviteCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'staff@example.com',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.theme.primaryColor,
+                          foregroundColor: Colors.white),
+                      onPressed: _inviting ? null : _invite,
+                      child: Text(_inviting ? 'Sending…' : 'Invite'),
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!,
+                        style: const TextStyle(
+                            color: Color(0xFFD4714D), fontSize: 12)),
+                  ],
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
