@@ -117,119 +117,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
               theme: theme,
               child: Column(
                 children: [
-                  Text('Business Info',
-                      style: TextStyle(
-                          color: theme.textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _nameCtrl,
-                    decoration: const InputDecoration(
-                        hintText: 'Business name',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero),
-                    style: TextStyle(
-                        color: theme.textColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold),
-                    onChanged: (_) => _save(),
-                  ),
-                  Divider(color: theme.borderColor, height: 24),
-                  _LabeledField(label: 'Address', ctrl: _addrCtrl, hint: '123 Main St', keyboard: TextInputType.streetAddress, theme: theme, onChanged: (_) => _save()),
-                  Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Phone', ctrl: _phoneCtrl, hint: '(555) 123-4567', keyboard: TextInputType.phone, theme: theme, onChanged: (_) => _save(), inputFormatters: [USPhoneInputFormatter()]),
-                  Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Email', ctrl: _emailCtrl, hint: 'hello@yourbusiness.com', keyboard: TextInputType.emailAddress, theme: theme, onChanged: (_) => _save(), inputFormatters: [LowercaseEmailFormatter()]),
-                  Divider(color: theme.borderColor, height: 24),
-                  Text('Taxes',
-                      style: TextStyle(
-                          color: theme.textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Nightly Rate',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Pre-filled on auto-generated invoices',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showBusinessInfoSheet(context, theme),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.business_outlined,
+                              color: theme.primaryColor, size: 20),
                         ),
-                      ),
-                      Text('\$',
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                      SizedBox(
-                        width: 80,
-                        child: TextField(
-                          controller: _nightlyRateCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textAlign: TextAlign.right,
-                          decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: '0.00',
-                              contentPadding: EdgeInsets.zero),
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          onChanged: (_) => _save(),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Business Info',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Manage business details and settings',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Divider(color: theme.borderColor, height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Default Tax Rate',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Applied automatically to new invoices',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 72,
-                        child: TextField(
-                          controller: _taxCtrl,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.right,
-                          decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: '0',
-                              contentPadding: EdgeInsets.zero),
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          onChanged: (_) => _save(),
-                        ),
-                      ),
-                      Text('%',
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ],
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
                   ),
                   Divider(color: theme.borderColor, height: 24),
                   GestureDetector(
@@ -457,6 +378,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) =>
           withTenantProviders(context, _ReportsBottomSheet(theme: theme)),
+    );
+  }
+
+  void _showBusinessInfoSheet(BuildContext context, ThemeService theme) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BusinessInfoBottomSheet(
+        theme: theme,
+        nameCtrl: _nameCtrl,
+        addrCtrl: _addrCtrl,
+        phoneCtrl: _phoneCtrl,
+        emailCtrl: _emailCtrl,
+        taxCtrl: _taxCtrl,
+        nightlyRateCtrl: _nightlyRateCtrl,
+        onSave: _save,
+      ),
     );
   }
 
@@ -1886,6 +1825,243 @@ class _ReportsBottomSheetState extends State<_ReportsBottomSheet> {
                             ],
                           ),
                         )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BusinessInfoBottomSheet extends StatefulWidget {
+  final ThemeService theme;
+  final TextEditingController nameCtrl;
+  final TextEditingController addrCtrl;
+  final TextEditingController phoneCtrl;
+  final TextEditingController emailCtrl;
+  final TextEditingController taxCtrl;
+  final TextEditingController nightlyRateCtrl;
+  final VoidCallback onSave;
+
+  const _BusinessInfoBottomSheet({
+    required this.theme,
+    required this.nameCtrl,
+    required this.addrCtrl,
+    required this.phoneCtrl,
+    required this.emailCtrl,
+    required this.taxCtrl,
+    required this.nightlyRateCtrl,
+    required this.onSave,
+  });
+
+  @override
+  State<_BusinessInfoBottomSheet> createState() => _BusinessInfoBottomSheetState();
+}
+
+class _BusinessInfoBottomSheetState extends State<_BusinessInfoBottomSheet> {
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: widget.theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Business Info',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: widget.theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: widget.theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text('Business Details',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.nameCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Business Name',
+                      hintText: 'Your business name',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 15),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.addrCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Address',
+                      hintText: '123 Main St',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.streetAddress,
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.phoneCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Phone',
+                      hintText: '(555) 123-4567',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [USPhoneInputFormatter()],
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.emailCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'hello@yourbusiness.com',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    inputFormatters: [LowercaseEmailFormatter()],
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Taxes',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Nightly Rate',
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            Text('Pre-filled on auto-generated invoices',
+                                style: TextStyle(
+                                    color: widget.theme.subtextColor, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: widget.nightlyRateCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            prefixText: '\$ ',
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: widget.theme.subtextColor),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                          onChanged: (_) => widget.onSave(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Default Tax Rate',
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            Text('Applied automatically to new invoices',
+                                style: TextStyle(
+                                    color: widget.theme.subtextColor, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: widget.taxCtrl,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            suffixText: '%',
+                            hintText: '0',
+                            hintStyle: TextStyle(color: widget.theme.subtextColor),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                          onChanged: (_) => widget.onSave(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
