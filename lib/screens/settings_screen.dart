@@ -643,15 +643,28 @@ class _ServicesSheet extends StatelessWidget {
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text('Products & Services',
-                        style: TextStyle(
-                            color: theme.textColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Products & Services',
+                            style: TextStyle(
+                                color: theme.textColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Done',
+                            style: TextStyle(
+                                color: theme.primaryColor,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.primaryColor,
