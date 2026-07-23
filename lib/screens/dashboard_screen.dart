@@ -219,6 +219,7 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
 }
 
 class _StatCard extends StatelessWidget {
