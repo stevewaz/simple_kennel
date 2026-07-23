@@ -393,7 +393,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         phoneCtrl: _phoneCtrl,
         emailCtrl: _emailCtrl,
         taxCtrl: _taxCtrl,
-        nightlyRateCtrl: _nightlyRateCtrl,
         onSave: _save,
       ),
     );
@@ -1855,7 +1854,6 @@ class _BusinessInfoBottomSheet extends StatefulWidget {
   final TextEditingController phoneCtrl;
   final TextEditingController emailCtrl;
   final TextEditingController taxCtrl;
-  final TextEditingController nightlyRateCtrl;
   final VoidCallback onSave;
 
   const _BusinessInfoBottomSheet({
@@ -1865,7 +1863,6 @@ class _BusinessInfoBottomSheet extends StatefulWidget {
     required this.phoneCtrl,
     required this.emailCtrl,
     required this.taxCtrl,
-    required this.nightlyRateCtrl,
     required this.onSave,
   });
 
@@ -1983,54 +1980,11 @@ class _BusinessInfoBottomSheetState extends State<_BusinessInfoBottomSheet> {
                     onChanged: (_) => widget.onSave(),
                   ),
                   const SizedBox(height: 20),
-                  Text('Taxes',
+                  Text('Tax Settings',
                       style: TextStyle(
                           color: widget.theme.textColor,
                           fontSize: 14,
                           fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Nightly Rate',
-                                style: TextStyle(
-                                    color: widget.theme.textColor,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                            Text('Pre-filled on auto-generated invoices',
-                                style: TextStyle(
-                                    color: widget.theme.subtextColor, fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 100,
-                        child: TextField(
-                          controller: widget.nightlyRateCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textAlign: TextAlign.right,
-                          decoration: InputDecoration(
-                            prefixText: '\$ ',
-                            hintText: '0.00',
-                            hintStyle: TextStyle(color: widget.theme.subtextColor),
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          style: TextStyle(
-                              color: widget.theme.primaryColor,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600),
-                          onChanged: (_) => widget.onSave(),
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
