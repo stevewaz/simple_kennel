@@ -2271,6 +2271,7 @@ class _InviteStaffBottomSheetState extends State<_InviteStaffBottomSheet> {
   final _inviteCtrl = TextEditingController();
   bool _inviting = false;
   String? _error;
+  String? _invitedEmail;
 
   @override
   void dispose() {
@@ -2289,16 +2290,28 @@ class _InviteStaffBottomSheetState extends State<_InviteStaffBottomSheet> {
       await context
           .read<AuthService>()
           .inviteStaff(widget.tenantId, email);
+      setState(() {
+        _invitedEmail = email;
+      });
       _inviteCtrl.clear();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                '$email can now sign up to join — send them the app link.')));
-      }
     } catch (e) {
       setState(() => _error = 'Could not send invite. Try again.');
     } finally {
       if (mounted) setState(() => _inviting = false);
+    }
+  }
+
+  Future<void> _copyShareMessage() async {
+    if (_invitedEmail == null) return;
+    final message = 'I\'ve invited you to join our team on Runbook. '
+        'Download the app and sign up with: $_invitedEmail\n\n'
+        'iOS: [App Store Link]\n'
+        'Android: [Play Store Link]';
+    await Clipboard.setData(ClipboardData(text: message));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message copied to clipboard!')),
+      );
     }
   }
 
@@ -2351,48 +2364,143 @@ class _InviteStaffBottomSheetState extends State<_InviteStaffBottomSheet> {
                 controller: controller,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('Send an invite',
+                  if (_invitedEmail == null) ...[
+                    Text('Send an invite',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('They\'ll sign up with this email to join your business.',
+                        style: TextStyle(
+                            color: widget.theme.subtextColor, fontSize: 12)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _inviteCtrl,
+                      enabled: !_inviting,
+                      keyboardType: TextInputType.emailAddress,
                       style: TextStyle(
-                          color: widget.theme.textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('They\'ll sign up with this email to join your business.',
-                      style: TextStyle(
-                          color: widget.theme.subtextColor, fontSize: 12)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _inviteCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    style: TextStyle(
-                        color: widget.theme.textColor, fontSize: 15),
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'staff@example.com',
-                      hintStyle:
-                          TextStyle(color: widget.theme.subtextColor),
-                      isDense: true,
+                          color: widget.theme.textColor, fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        hintText: 'staff@example.com',
+                        hintStyle:
+                            TextStyle(color: widget.theme.subtextColor),
+                        isDense: true,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: widget.theme.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12)),
-                      onPressed: _inviting ? null : _invite,
-                      child: Text(_inviting ? 'Sending…' : 'Send Invite',
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.theme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12)),
+                        onPressed: _inviting ? null : _invite,
+                        child: Text(_inviting ? 'Sending…' : 'Send Invite',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
                     ),
-                  ),
-                  if (_error != null) ...[
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4714D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: const Color(0xFFD4714D).withValues(alpha: 0.3)),
+                        ),
+                        child: Text(_error!,
+                            style: const TextStyle(
+                                color: Color(0xFFD4714D), fontSize: 12)),
+                      ),
+                    ],
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: const Color(0xFF4CAF50).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFF4CAF50), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Invite sent!',
+                                    style: TextStyle(
+                                        color: widget.theme.textColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold)),
+                                Text(_invitedEmail!,
+                                    style: TextStyle(
+                                        color: widget.theme.subtextColor,
+                                        fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('How to share the invite:',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    Text(_error!,
-                        style: const TextStyle(
-                            color: Color(0xFFD4714D), fontSize: 12)),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: widget.theme.cardBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: widget.theme.borderColor),
+                      ),
+                      child: Text(
+                        'Send them:\n'
+                        '1. The email they were invited with: $_invitedEmail\n'
+                        '2. A link to download the app\n'
+                        '3. Instructions to sign up with their email',
+                        style: TextStyle(
+                            color: widget.theme.subtextColor, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.theme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12)),
+                        onPressed: _copyShareMessage,
+                        icon: const Icon(Icons.content_copy, size: 18),
+                        label: const Text('Copy Share Message',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _invitedEmail = null);
+                        _inviteCtrl.clear();
+                      },
+                      child: Text('Invite Another Member',
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
                   ],
                   const SizedBox(height: 20),
                 ],
