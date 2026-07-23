@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
 
 /// Thin wrapper around Firebase Auth + the tenant/staff data model.
 /// The original signed-up account's own uid IS the tenant id; staff added
@@ -91,11 +92,71 @@ class AuthService {
 
   // ── Staff management ──────────────────────────────────────────────────
 
-  Future<void> inviteStaff(String tenantId, String email) =>
-      _db.collection('invites').doc(_normalize(email)).set({
-        'tenantId': tenantId,
-        'invitedAt': DateTime.now().toUtc().toIso8601String(),
-      });
+  Future<void> inviteStaff(String tenantId, String email) async {
+    final normalizedEmail = _normalize(email);
+
+    // Generate invite code
+    final inviteCode = _generateInviteCode();
+
+    // Set expiration to 30 days from now
+    final expiresAt = DateTime.now().add(const Duration(days: 30));
+
+    // Create invite document - this will trigger the sendInviteEmail Cloud Function
+    await _db.collection('invites').add({
+      'tenantId': tenantId,
+      'email': normalizedEmail,
+      'inviteCode': inviteCode,
+      'createdAt': DateTime.now().toUtc(),
+      'expiresAt': expiresAt.toUtc(),
+      'used': false,
+      'emailSent': null,
+    });
+  }
+
+  // Verify invite code and get tenant info
+  Future<Map<String, dynamic>> verifyInviteCode(
+      String inviteCode, String email) async {
+    final normalizedEmail = _normalize(email);
+
+    final snapshot = await _db
+        .collection('invites')
+        .where('inviteCode', isEqualTo: inviteCode)
+        .where('email', isEqualTo: normalizedEmail)
+        .where('used', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      throw Exception('Invalid or expired invite code');
+    }
+
+    final inviteDoc = snapshot.docs[0];
+    final invite = inviteDoc.data();
+
+    // Check expiration
+    final expiresAt = (invite['expiresAt'] as Timestamp).toDate();
+    if (DateTime.now().isAfter(expiresAt)) {
+      throw Exception('This invite has expired');
+    }
+
+    // Mark as used
+    await inviteDoc.reference.update({
+      'used': true,
+      'usedAt': DateTime.now().toUtc(),
+    });
+
+    return {
+      'tenantId': invite['tenantId'],
+      'email': normalizedEmail,
+    };
+  }
+
+  // Generate random invite code (e.g., "ABC12345")
+  String _generateInviteCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return List.generate(8, (i) => chars[random.nextInt(chars.length)]).join();
+  }
 
   Stream<List<Map<String, dynamic>>> staffMembers(String tenantId) =>
       _db
