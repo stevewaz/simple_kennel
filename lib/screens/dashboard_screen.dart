@@ -61,75 +61,90 @@ class DashboardScreen extends StatelessWidget {
       backgroundColor: theme.scaffoldBgColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                DateFormat('EEEE, MMMM d, yyyy').format(today),
-                style: TextStyle(color: theme.subtextColor, fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Dashboard',
-                style: TextStyle(
-                  color: theme.textColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('EEEE, MMMM d').format(today),
+                      style: TextStyle(color: theme.subtextColor, fontSize: 12),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Dashboard',
+                      style: TextStyle(
+                        color: theme.textColor,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
 
-              // Stat cards
-              Row(
+              // Stat cards - 2x2 grid
+              Column(
                 children: [
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Occupancy',
-                      value: '$occupied / $totalRuns',
-                      sub: '${(occupancyPct * 100).toStringAsFixed(0)}% full',
-                      valueColor: theme.primaryColor,
-                      progress: occupancyPct,
-                      progressColor: theme.primaryColor,
-                      theme: theme,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Occupancy',
+                          value: '$occupied / $totalRuns',
+                          sub: '${(occupancyPct * 100).toStringAsFixed(0)}% full',
+                          valueColor: theme.primaryColor,
+                          progress: occupancyPct,
+                          progressColor: theme.primaryColor,
+                          theme: theme,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Check-ins',
+                          value: app.todayCheckIns.toString(),
+                          sub: checkInSub,
+                          valueColor: const Color(0xFF4CAF50),
+                          theme: theme,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Check-ins Today',
-                      value: app.todayCheckIns.toString(),
-                      sub: checkInSub,
-                      valueColor: const Color(0xFF4CAF50),
-                      theme: theme,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Check-outs Today',
-                      value: app.todayCheckOuts.toString(),
-                      sub: 'departures',
-                      valueColor: const Color(0xFFD4714D),
-                      theme: theme,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Customers',
-                      value: app.customers.length.toString(),
-                      sub: 'on file',
-                      valueColor: const Color(0xFF2196F3),
-                      theme: theme,
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Check-outs',
+                          value: app.todayCheckOuts.toString(),
+                          sub: 'departures',
+                          valueColor: const Color(0xFFD4714D),
+                          theme: theme,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Customers',
+                          value: app.customers.length.toString(),
+                          sub: 'total',
+                          valueColor: const Color(0xFF2196F3),
+                          theme: theme,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Lower two columns
+              // Activity sections
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -138,7 +153,18 @@ class DashboardScreen extends StatelessWidget {
                       theme: theme,
                       title: "Today's Activity",
                       child: todayActivities.isEmpty
-                          ? _emptyLabel('No activity today', theme)
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 32),
+                              child: Center(
+                                child: Text(
+                                  'No activity',
+                                  style: TextStyle(
+                                    color: theme.subtextColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            )
                           : Column(
                               children: todayActivities
                                   .map((a) => _ActivityRow(
@@ -167,7 +193,18 @@ class DashboardScreen extends StatelessWidget {
                       theme: theme,
                       title: 'Upcoming Bookings',
                       child: upcomingSlice.isEmpty
-                          ? _emptyLabel('No upcoming bookings', theme)
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 32),
+                              child: Center(
+                                child: Text(
+                                  'None scheduled',
+                                  style: TextStyle(
+                                    color: theme.subtextColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            )
                           : Column(
                               children: upcomingSlice
                                   .map((b) => _UpcomingRow(b: b, today: today, theme: theme))
@@ -182,12 +219,6 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _emptyLabel(String text, ThemeService theme) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(text, style: TextStyle(color: theme.subtextColor, fontSize: 13)),
-      );
 }
 
 class _StatCard extends StatelessWidget {
@@ -212,7 +243,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.cardBgColor,
         borderRadius: BorderRadius.circular(10),
@@ -221,20 +252,34 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: theme.subtextColor, fontSize: 11)),
-          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                color: theme.subtextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              )),
+          const SizedBox(height: 8),
           Text(value,
               style: TextStyle(
-                  color: valueColor, fontSize: 26, fontWeight: FontWeight.bold)),
-          Text(sub, style: TextStyle(color: theme.subtextColor, fontSize: 11)),
+                  color: valueColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(sub,
+              style: TextStyle(
+                color: theme.subtextColor,
+                fontSize: 11,
+              )),
           if (progress != null) ...[
-            const SizedBox(height: 6),
-            LinearProgressIndicator(
-              value: progress,
-              color: progressColor,
-              backgroundColor: theme.borderColor,
-              minHeight: 4,
+            const SizedBox(height: 8),
+            ClipRRect(
               borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progress,
+                color: progressColor,
+                backgroundColor: theme.borderColor,
+                minHeight: 3,
+              ),
             ),
           ],
         ],
@@ -253,7 +298,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.cardBgColor,
         borderRadius: BorderRadius.circular(10),
@@ -264,9 +309,10 @@ class _Card extends StatelessWidget {
         children: [
           Text(title,
               style: TextStyle(
-                  color: theme.textColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold)),
+                color: theme.textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              )),
           const SizedBox(height: 12),
           child,
         ],
