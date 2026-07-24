@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import '../services/tenant_settings_service.dart';
 import '../services/theme_service.dart';
 import '../providers/app_provider.dart';
 import '../models/service.dart';
+import '../models/invoice.dart';
 import 'package:flutter/services.dart';
 import '../services/runs_service.dart';
 import '../utils/input_formatters.dart';
 import '../utils/tenant_providers.dart';
+import '../utils/payments_csv.dart';
 import '../widgets/dialogs/add_service_dialog.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -76,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = context.watch<ThemeService>();
     final runs = context.watch<RunsService>();
     final settings = context.watch<TenantSettingsService>();
+    final app = context.watch<AppProvider>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBgColor,
@@ -105,121 +112,189 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             if (_isOwner) ...[
-            _SectionLabel('BRANDING', theme),
+            _SectionLabel('ADMIN CENTER', theme),
             _Card(
               theme: theme,
               child: Column(
                 children: [
-                  TextField(
-                    controller: _nameCtrl,
-                    decoration: const InputDecoration(
-                        hintText: 'Business name',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero),
-                    style: TextStyle(
-                        color: theme.textColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold),
-                    onChanged: (_) => _save(),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showBusinessInfoSheet(context, theme),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.business_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Business Info',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Manage business details and settings',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
                   ),
                   Divider(color: theme.borderColor, height: 24),
-                  _LabeledField(label: 'Address', ctrl: _addrCtrl, hint: '123 Main St', keyboard: TextInputType.streetAddress, theme: theme, onChanged: (_) => _save()),
-                  Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Phone', ctrl: _phoneCtrl, hint: '(555) 123-4567', keyboard: TextInputType.phone, theme: theme, onChanged: (_) => _save(), inputFormatters: [USPhoneInputFormatter()]),
-                  Divider(color: theme.borderColor, height: 12),
-                  _LabeledField(label: 'Email', ctrl: _emailCtrl, hint: 'hello@yourbusiness.com', keyboard: TextInputType.emailAddress, theme: theme, onChanged: (_) => _save(), inputFormatters: [LowercaseEmailFormatter()]),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _SectionLabel('BILLING', theme),
-            _Card(
-              theme: theme,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Nightly Rate',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Pre-filled on auto-generated invoices',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showServicesSheet(context, theme),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.storefront_outlined,
+                              color: theme.primaryColor, size: 20),
                         ),
-                      ),
-                      Text('\$',
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                      SizedBox(
-                        width: 80,
-                        child: TextField(
-                          controller: _nightlyRateCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textAlign: TextAlign.right,
-                          decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: '0.00',
-                              contentPadding: EdgeInsets.zero),
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          onChanged: (_) => _save(),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Products & Services',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Manage your billing catalog',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
                   ),
                   Divider(color: theme.borderColor, height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Default Tax Rate',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Applied automatically to new invoices',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showTeamSheet(context, theme, settings.tenantId),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.people_outlined,
+                              color: theme.primaryColor, size: 20),
                         ),
-                      ),
-                      SizedBox(
-                        width: 72,
-                        child: TextField(
-                          controller: _taxCtrl,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.right,
-                          decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: '0',
-                              contentPadding: EdgeInsets.zero),
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          onChanged: (_) => _save(),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Team',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('View staff members',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Text('%',
-                          style: TextStyle(
-                              color: theme.primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ],
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
+                  Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showInviteSheet(context, theme, settings.tenantId),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.person_add_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Invite a Staff Member',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('Add new team members',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
+                  ),
+                  Divider(color: theme.borderColor, height: 24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showReportsSheet(context, theme),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assessment_outlined,
+                              color: theme.primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Reports',
+                                  style: TextStyle(
+                                      color: theme.textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              Text('View and export payment reports',
+                                  style: TextStyle(
+                                      color: theme.subtextColor, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: theme.subtextColor),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -302,125 +377,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
-            if (_isOwner) ...[
-            _SectionLabel('CATALOG', theme),
-            _Card(
-              theme: theme,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _showServicesSheet(context, theme),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(Icons.storefront_outlined,
-                          color: theme.primaryColor, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Products & Services',
-                              style: TextStyle(
-                                  color: theme.textColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
-                          Text('Manage your billing catalog',
-                              style: TextStyle(
-                                  color: theme.subtextColor, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: theme.subtextColor),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _SectionLabel('RUNS', theme),
-            _Card(
-              theme: theme,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Number of Runs',
-                                style: TextStyle(
-                                    color: theme.textColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Total kennel runs on the schedule',
-                                style: TextStyle(
-                                    color: theme.subtextColor, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      _Stepper(
-                        value: runs.count,
-                        min: 1,
-                        max: 50,
-                        theme: theme,
-                        onChanged: (v) => runs.setCount(v),
-                      ),
-                    ],
-                  ),
-                  Divider(color: theme.borderColor, height: 24),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _showRunNamesSheet(context, theme, runs),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.edit_outlined,
-                              color: theme.primaryColor, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Run Names',
-                                  style: TextStyle(
-                                      color: theme.textColor,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold)),
-                              Text('Customize the label for each run',
-                                  style: TextStyle(
-                                      color: theme.subtextColor, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right, color: theme.subtextColor),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-              _SectionLabel('ADMIN CENTER', theme),
-              _TeamCard(theme: theme, tenantId: settings.tenantId),
-              const SizedBox(height: 24),
-            ],
-
             _SectionLabel('ACCOUNT', theme),
             _Card(
               theme: theme,
@@ -482,6 +438,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) =>
           withTenantProviders(context, _ServicesSheet(theme: theme)),
+    );
+  }
+
+  void _showReportsSheet(BuildContext context, ThemeService theme) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          withTenantProviders(context, _ReportsBottomSheet(theme: theme)),
+    );
+  }
+
+  void _showBusinessInfoSheet(BuildContext context, ThemeService theme) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BusinessInfoBottomSheet(
+        theme: theme,
+        nameCtrl: _nameCtrl,
+        addrCtrl: _addrCtrl,
+        phoneCtrl: _phoneCtrl,
+        emailCtrl: _emailCtrl,
+        taxCtrl: _taxCtrl,
+        onSave: _save,
+      ),
+    );
+  }
+
+  void _showTeamSheet(BuildContext context, ThemeService theme, String tenantId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TeamBottomSheet(theme: theme, tenantId: tenantId),
+    );
+  }
+
+  void _showInviteSheet(BuildContext context, ThemeService theme, String tenantId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InviteStaffBottomSheet(theme: theme, tenantId: tenantId),
     );
   }
 
@@ -729,15 +730,28 @@ class _ServicesSheet extends StatelessWidget {
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text('Products & Services',
-                        style: TextStyle(
-                            color: theme.textColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Products & Services',
+                            style: TextStyle(
+                                color: theme.textColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Done',
+                            style: TextStyle(
+                                color: theme.primaryColor,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.primaryColor,
@@ -1156,6 +1170,1340 @@ class _RunNamesSheetState extends State<_RunNamesSheet> {
                     ],
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportsCard extends StatefulWidget {
+  final ThemeService theme;
+  final AppProvider app;
+  const _ReportsCard({required this.theme, required this.app});
+
+  @override
+  State<_ReportsCard> createState() => _ReportsCardState();
+}
+
+class _ReportsCardState extends State<_ReportsCard> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _exporting = false;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, 1);
+    _end = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _start = DateTime(picked.year, picked.month, picked.day);
+        if (_end.isBefore(_start)) _end = _start;
+      } else {
+        _end = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_start.isAfter(_end)) _start = _end;
+      }
+    });
+  }
+
+  Future<void> _export(List<Invoice> invoices) async {
+    setState(() => _exporting = true);
+    try {
+      final csv = buildPaymentsCsv(invoices);
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final fileName =
+          'runbook-payments-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
+      await FilePicker.saveFile(
+        dialogTitle: 'Save payments report',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes,
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final endOfDay = DateTime(_end.year, _end.month, _end.day, 23, 59, 59);
+    final invoices = widget.app.paidInvoicesBetween(_start, endOfDay);
+    final total = invoices.fold<double>(0, (sum, i) => sum + i.totalAmount);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Reports',
+            style: TextStyle(
+                color: widget.theme.textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text('View and export payment reports',
+            style: TextStyle(
+                color: widget.theme.subtextColor, fontSize: 12)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pickDate(isStart: true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.formBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.inputBorderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From',
+                          style: TextStyle(
+                              color: widget.theme.subtextColor, fontSize: 11)),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(_dateFmt.format(_start),
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
+                          ),
+                          Icon(Icons.calendar_today,
+                              size: 14, color: widget.theme.subtextColor),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pickDate(isStart: false),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.formBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.inputBorderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('To',
+                          style: TextStyle(
+                              color: widget.theme.subtextColor, fontSize: 11)),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(_dateFmt.format(_end),
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
+                          ),
+                          Icon(Icons.calendar_today,
+                              size: 14, color: widget.theme.subtextColor),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: widget.theme.cardBgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: widget.theme.borderColor),
+          ),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      '${invoices.length} payment${invoices.length == 1 ? '' : 's'}',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontWeight: FontWeight.w600)),
+                  Text('\$${total.toStringAsFixed(2)} total',
+                      style: TextStyle(
+                          color: widget.theme.primaryColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.theme.primaryColor,
+                    foregroundColor: Colors.white),
+                icon: _exporting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.download, size: 16),
+                label: const Text('Export CSV'),
+                onPressed: invoices.isEmpty || _exporting
+                    ? null
+                    : () => _export(invoices),
+              ),
+            ],
+          ),
+        ),
+        if (invoices.isNotEmpty)
+          ...[
+            const SizedBox(height: 12),
+            ...invoices.map((inv) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: widget.theme.cardBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.theme.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(inv.customerName,
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13)),
+                            Text(
+                                '${inv.invoiceNumber} · ${inv.paymentMethod} · ${_dateFmt.format(inv.paidAt!)}',
+                                style: TextStyle(
+                                    color: widget.theme.subtextColor,
+                                    fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      Text(inv.amountDisplay,
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                    ],
+                  ),
+                )),
+          ]
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text('No paid invoices in this range',
+                  style: TextStyle(color: widget.theme.subtextColor)),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class ReportsSheet extends StatefulWidget {
+  const ReportsSheet({super.key});
+
+  @override
+  State<ReportsSheet> createState() => _ReportsSheetState();
+}
+
+class _ReportsSheetState extends State<ReportsSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _exporting = false;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, 1);
+    _end = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _start = DateTime(picked.year, picked.month, picked.day);
+        if (_end.isBefore(_start)) _end = _start;
+      } else {
+        _end = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_start.isAfter(_end)) _start = _end;
+      }
+    });
+  }
+
+  Future<void> _export(List<Invoice> invoices) async {
+    setState(() => _exporting = true);
+    try {
+      final csv = buildPaymentsCsv(invoices);
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final fileName =
+          'runbook-payments-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
+      await FilePicker.saveFile(
+        dialogTitle: 'Save payments report',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes,
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppProvider>();
+    final theme = context.watch<ThemeService>();
+    final endOfDay = DateTime(_end.year, _end.month, _end.day, 23, 59, 59);
+    final invoices = app.paidInvoicesBetween(_start, endOfDay);
+    final total = invoices.fold<double>(0, (sum, i) => sum + i.totalAmount);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBgColor,
+      appBar: AppBar(
+        backgroundColor: theme.primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text('Payment Reports',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text('Payments',
+              style: TextStyle(
+                  color: theme.textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('Paid invoices in the selected date range, ready to export for QuickBooks or your bookkeeper.',
+              style: TextStyle(color: theme.subtextColor, fontSize: 12)),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardBgColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.borderColor),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Start Date',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(_dateFmt.format(_start),
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _pickDate(isStart: true),
+                      child: Text('Change',
+                          style: TextStyle(color: theme.primaryColor)),
+                    ),
+                  ],
+                ),
+                Divider(color: theme.borderColor, height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('End Date',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(_dateFmt.format(_end),
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _pickDate(isStart: false),
+                      child: Text('Change',
+                          style: TextStyle(color: theme.primaryColor)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardBgColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.borderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Total Revenue',
+                              style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold)),
+                          Text('${invoices.length} invoices',
+                              style: TextStyle(
+                                  color: theme.subtextColor, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Text('\$${total.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            color: theme.primaryColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                if (invoices.isNotEmpty) ...[
+                  Divider(color: theme.borderColor, height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.download),
+                      label: Text(_exporting ? 'Exporting...' : 'Export as CSV'),
+                      onPressed: _exporting ? null : () => _export(invoices),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportsBottomSheet extends StatefulWidget {
+  final ThemeService theme;
+  const _ReportsBottomSheet({required this.theme});
+
+  @override
+  State<_ReportsBottomSheet> createState() => _ReportsBottomSheetState();
+}
+
+class _ReportsBottomSheetState extends State<_ReportsBottomSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _exporting = false;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, 1);
+    _end = DateTime(now.year, now.month + 1, 0);
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _start = DateTime(picked.year, picked.month, picked.day);
+        if (_end.isBefore(_start)) _end = _start;
+      } else {
+        _end = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_start.isAfter(_end)) _start = _end;
+      }
+    });
+  }
+
+  Future<void> _export(List<Invoice> invoices) async {
+    setState(() => _exporting = true);
+    try {
+      final csv = buildPaymentsCsv(invoices);
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final fileName =
+          'runbook-payments-${DateFormat('yyyyMMdd').format(_start)}-${DateFormat('yyyyMMdd').format(_end)}.csv';
+      await FilePicker.saveFile(
+        dialogTitle: 'Save payments report',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes,
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppProvider>();
+    final endOfDay = DateTime(_end.year, _end.month, _end.day, 23, 59, 59);
+    final invoices = app.paidInvoicesBetween(_start, endOfDay);
+    final total = invoices.fold<double>(0, (sum, i) => sum + i.totalAmount);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: widget.theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Payment Reports',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: widget.theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: widget.theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _pickDate(isStart: true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: widget.theme.formBgColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: widget.theme.inputBorderColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('From',
+                                    style: TextStyle(
+                                        color: widget.theme.subtextColor, fontSize: 11)),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(_dateFmt.format(_start),
+                                          style: TextStyle(
+                                              color: widget.theme.textColor,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500)),
+                                    ),
+                                    Icon(Icons.calendar_today,
+                                        size: 14, color: widget.theme.subtextColor),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _pickDate(isStart: false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: widget.theme.formBgColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: widget.theme.inputBorderColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('To',
+                                    style: TextStyle(
+                                        color: widget.theme.subtextColor, fontSize: 11)),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(_dateFmt.format(_end),
+                                          style: TextStyle(
+                                              color: widget.theme.textColor,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500)),
+                                    ),
+                                    Icon(Icons.calendar_today,
+                                        size: 14, color: widget.theme.subtextColor),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: widget.theme.cardBgColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: widget.theme.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${invoices.length} payment${invoices.length == 1 ? '' : 's'}',
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontWeight: FontWeight.w600)),
+                            Text('\$${total.toStringAsFixed(2)} total',
+                                style: TextStyle(
+                                    color: widget.theme.primaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: widget.theme.primaryColor,
+                              foregroundColor: Colors.white),
+                          icon: _exporting
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.download, size: 16),
+                          label: const Text('Export CSV'),
+                          onPressed: invoices.isEmpty || _exporting
+                              ? null
+                              : () => _export(invoices),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (invoices.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text('No paid invoices in this range',
+                            style: TextStyle(color: widget.theme.subtextColor)),
+                      ),
+                    )
+                  else
+                    ...invoices.map((inv) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: widget.theme.cardBgColor,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: widget.theme.borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(inv.customerName,
+                                        style: TextStyle(
+                                            color: widget.theme.textColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13)),
+                                    Text(
+                                        '${inv.invoiceNumber} · ${inv.paymentMethod} · ${_dateFmt.format(inv.paidAt!)}',
+                                        style: TextStyle(
+                                            color: widget.theme.subtextColor,
+                                            fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                              Text(inv.amountDisplay,
+                                  style: TextStyle(
+                                      color: widget.theme.primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14)),
+                            ],
+                          ),
+                        )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BusinessInfoBottomSheet extends StatefulWidget {
+  final ThemeService theme;
+  final TextEditingController nameCtrl;
+  final TextEditingController addrCtrl;
+  final TextEditingController phoneCtrl;
+  final TextEditingController emailCtrl;
+  final TextEditingController taxCtrl;
+  final VoidCallback onSave;
+
+  const _BusinessInfoBottomSheet({
+    required this.theme,
+    required this.nameCtrl,
+    required this.addrCtrl,
+    required this.phoneCtrl,
+    required this.emailCtrl,
+    required this.taxCtrl,
+    required this.onSave,
+  });
+
+  @override
+  State<_BusinessInfoBottomSheet> createState() => _BusinessInfoBottomSheetState();
+}
+
+class _BusinessInfoBottomSheetState extends State<_BusinessInfoBottomSheet> {
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: widget.theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Business Info',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: widget.theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: widget.theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text('Business Details',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.nameCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Business Name',
+                      hintText: 'Your business name',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 15),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.addrCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Address',
+                      hintText: '123 Main St',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.streetAddress,
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.phoneCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Phone',
+                      hintText: '(555) 123-4567',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [USPhoneInputFormatter()],
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: widget.emailCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'hello@yourbusiness.com',
+                      hintStyle: TextStyle(color: widget.theme.subtextColor),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    inputFormatters: [LowercaseEmailFormatter()],
+                    style: TextStyle(color: widget.theme.textColor, fontSize: 13),
+                    onChanged: (_) => widget.onSave(),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Tax Settings',
+                      style: TextStyle(
+                          color: widget.theme.textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Default Tax Rate',
+                                style: TextStyle(
+                                    color: widget.theme.textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            Text('Applied automatically to new invoices',
+                                style: TextStyle(
+                                    color: widget.theme.subtextColor, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: widget.taxCtrl,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            suffixText: '%',
+                            hintText: '0',
+                            hintStyle: TextStyle(color: widget.theme.subtextColor),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                          onChanged: (_) => widget.onSave(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamBottomSheet extends StatelessWidget {
+  final ThemeService theme;
+  final String tenantId;
+
+  const _TeamBottomSheet({
+    required this.theme,
+    required this.tenantId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Team',
+                        style: TextStyle(
+                            color: theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: theme.subtextColor),
+                      const SizedBox(width: 8),
+                      Text('You (Owner)',
+                          style: TextStyle(color: theme.textColor, fontSize: 13)),
+                    ],
+                  ),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: context.read<AuthService>().staffMembers(tenantId),
+                    builder: (context, snapshot) {
+                      final members = snapshot.data ?? const [];
+                      if (members.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            'No staff members yet',
+                            style: TextStyle(
+                                color: theme.subtextColor, fontSize: 13),
+                          ),
+                        );
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          ...members.map((m) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.person_outline,
+                                        size: 16, color: theme.subtextColor),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(m['email'] as String? ?? '',
+                                          style: TextStyle(
+                                              color: theme.textColor,
+                                              fontSize: 13)),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.close,
+                                          size: 16, color: theme.subtextColor),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      tooltip: 'Remove',
+                                      onPressed: () => context
+                                          .read<AuthService>()
+                                          .removeStaffMember(tenantId,
+                                              m['uid'] as String),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteStaffBottomSheet extends StatefulWidget {
+  final ThemeService theme;
+  final String tenantId;
+
+  const _InviteStaffBottomSheet({
+    required this.theme,
+    required this.tenantId,
+  });
+
+  @override
+  State<_InviteStaffBottomSheet> createState() =>
+      _InviteStaffBottomSheetState();
+}
+
+class _InviteStaffBottomSheetState extends State<_InviteStaffBottomSheet> {
+  final _inviteCtrl = TextEditingController();
+  bool _inviting = false;
+  String? _error;
+  String? _invitedEmail;
+
+  @override
+  void dispose() {
+    _inviteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _invite() async {
+    final email = _inviteCtrl.text.trim();
+    if (email.isEmpty) return;
+    setState(() {
+      _inviting = true;
+      _error = null;
+    });
+    try {
+      await context
+          .read<AuthService>()
+          .inviteStaff(widget.tenantId, email);
+      setState(() {
+        _invitedEmail = email;
+      });
+      _inviteCtrl.clear();
+    } catch (e) {
+      setState(() => _error = 'Could not send invite. Try again.');
+    } finally {
+      if (mounted) setState(() => _inviting = false);
+    }
+  }
+
+  Future<void> _copyShareMessage() async {
+    if (_invitedEmail == null) return;
+    final message = 'I\'ve invited you to join our team on Runbook. '
+        'Download the app and sign up with: $_invitedEmail\n\n'
+        'iOS: [App Store Link]\n'
+        'Android: [Play Store Link]';
+    await Clipboard.setData(ClipboardData(text: message));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message copied to clipboard!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.4,
+      maxChildSize: 0.8,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: widget.theme.scaffoldBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.theme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Invite a Staff Member',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done',
+                        style: TextStyle(
+                            color: widget.theme.primaryColor,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: widget.theme.borderColor, height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (_invitedEmail == null) ...[
+                    Text('Send an invite',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('They\'ll sign up with this email to join your business.',
+                        style: TextStyle(
+                            color: widget.theme.subtextColor, fontSize: 12)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _inviteCtrl,
+                      enabled: !_inviting,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(
+                          color: widget.theme.textColor, fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        hintText: 'staff@example.com',
+                        hintStyle:
+                            TextStyle(color: widget.theme.subtextColor),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.theme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12)),
+                        onPressed: _inviting ? null : _invite,
+                        child: Text(_inviting ? 'Sending…' : 'Send Invite',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4714D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: const Color(0xFFD4714D).withValues(alpha: 0.3)),
+                        ),
+                        child: Text(_error!,
+                            style: const TextStyle(
+                                color: Color(0xFFD4714D), fontSize: 12)),
+                      ),
+                    ],
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: const Color(0xFF4CAF50).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFF4CAF50), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Invite sent!',
+                                    style: TextStyle(
+                                        color: widget.theme.textColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold)),
+                                Text(_invitedEmail!,
+                                    style: TextStyle(
+                                        color: widget.theme.subtextColor,
+                                        fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('How to share the invite:',
+                        style: TextStyle(
+                            color: widget.theme.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: widget.theme.cardBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: widget.theme.borderColor),
+                      ),
+                      child: Text(
+                        'Send them:\n'
+                        '1. The email they were invited with: $_invitedEmail\n'
+                        '2. A link to download the app\n'
+                        '3. Instructions to sign up with their email',
+                        style: TextStyle(
+                            color: widget.theme.subtextColor, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.theme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12)),
+                        onPressed: _copyShareMessage,
+                        icon: const Icon(Icons.content_copy, size: 18),
+                        label: const Text('Copy Share Message',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _invitedEmail = null);
+                        _inviteCtrl.clear();
+                      },
+                      child: Text('Invite Another Member',
+                          style: TextStyle(
+                              color: widget.theme.primaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ],

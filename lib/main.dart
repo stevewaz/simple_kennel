@@ -167,16 +167,6 @@ class _MainShellState extends State<MainShell> {
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
-          if (isOwner)
-          IconButton(
-            icon: const Icon(Icons.summarize_outlined, color: Colors.white),
-            tooltip: 'Reports',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => withTenantProviders(
-                  context, const ReportsScreen())),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
             tooltip: 'Settings',
